@@ -8,7 +8,7 @@ import (
 )
 
 type Middleware interface {
-  Execute(*Request, *Response, map[string]interface{}, func(error))
+  Execute(*Request, *Response, *Env, func(error))
 }
 
 type App struct {
@@ -26,8 +26,8 @@ func (app *App) RequestHandler() http.HandlerFunc  {
       path := req.URL.Path
       if strings.HasPrefix(path, server.Mountpoint) {
         var next func (error)
-        env := make(map[string]interface{})
-        wrappedReq := NewRequest(req)
+        env := NewEnv()
+        wrappedReq := NewRequest(req, server)
         wrappedReq.SetRelativePath(server.Mountpoint, path)
         wrappedRes := NewResponse(res)
         middlewares := server.middleware

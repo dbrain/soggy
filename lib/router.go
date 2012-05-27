@@ -25,7 +25,7 @@ type Route struct {
   handler RouteHandler
 }
 
-type RouteHandler func(*Request, *Response, map[string]interface{}, func(error))
+type RouteHandler func(*Request, *Response, *Env, func(error))
 
 func (router *Router) AddRoute(method string, path string, routeHandler RouteHandler) {
   pathRegexp, err := regexp.Compile("^" + path + "$")
@@ -33,7 +33,7 @@ func (router *Router) AddRoute(method string, path string, routeHandler RouteHan
   router.Routes = append(router.Routes, Route{ method: method, path: pathRegexp, handler: routeHandler })
 }
 
-func (router *Router) Execute(req *Request, res *Response, env map[string]interface{}, nextMiddleware func(error)) {
+func (router *Router) Execute(req *Request, res *Response, env *Env, nextMiddleware func(error)) {
   var next func(error)
   routes := router.Routes
   maxIndex := len(routes)

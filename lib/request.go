@@ -6,6 +6,7 @@ import (
 
 type Request struct {
   *http.Request
+  Server *Server
   RelativePath string
 }
 
@@ -21,6 +22,6 @@ func (req *Request) SetRelativePath(mountpoint string, path string) {
   }
 }
 
-func NewRequest(req *http.Request) *Request {
-  return &Request{http.Request: req}
+func NewRequest(req *http.Request, server *Server) *Request {
+  return &Request{http.Request: req, Server: server}
 }

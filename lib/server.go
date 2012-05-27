@@ -17,10 +17,13 @@ func (servers Servers) Swap(i, j int) {
   servers[i], servers[j] = servers[j], servers[i]
 }
 
+type ServerConfig map[string]interface{}
+
 type Server struct {
   Mountpoint string
   middleware []Middleware
   Router *Router
+  Config ServerConfig
 }
 
 func (server *Server) Use(middleware ...Middleware) {

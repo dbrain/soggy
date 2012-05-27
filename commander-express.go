@@ -45,11 +45,11 @@ func main() {
   log.Println("Loaded config for " + config["name"].(string))
 
   server := express.NewServer("/web");
-  server.Get("/", express.RouteHandler(func (req *express.Request, res *express.Response, env map[string]interface{}, next func(error)) {
+  server.Get("/", express.RouteHandler(func (req *express.Request, res *express.Response, env *express.Env, next func(error)) {
     res.Header().Set("Content-Type", "text/plain")
     res.Write([]byte("This is an example server. Hell yeah."))
   }))
-  server.All(express.ANY_PATH, express.RouteHandler(func (req *express.Request, res *express.Response, env map[string]interface{}, next func(error)) {
+  server.All(express.ANY_PATH, express.RouteHandler(func (req *express.Request, res *express.Response, env *express.Env, next func(error)) {
     res.Header().Set("Content-Type", "text/plain")
     res.Write([]byte("404 Page would go here"))
   }))

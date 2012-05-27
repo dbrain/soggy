@@ -1,3 +1,9 @@
+Error Handling:
+- Get this working instead of just panicing
+
+Validation:
+- Look at how other frameworks do validation, work out how that would fit into express.go
+
 Body parser:
 - Parse JSON into map[string]interface{} or a specified struct.. how to specify?
 
@@ -27,9 +33,9 @@ Handle:
 - express.createServer().listen(3000) should function (listening on 0.0.0.0:3000)
 
 - Allow for binding render handlers to filetypes via express like API e.g. exports.__express = function(filename, options, callback) through express.createServer().engine('.html', magicTemplateEngine)
-- express.createServer().use(func (req, res, next) || func (err, req, res, next)) middleware
-- express.createServer().use(express.createServer.Router) router middleware
-- Add middleware through funcs get/head/post/put/delete
+// - express.createServer().use(func (req, res, next) || func (err, req, res, next)) middleware
+// - express.createServer().use(express.createServer.Router) router middleware
+// - Add middleware through funcs get/head/post/put/delete
 - Allow and parse parameters out of the url
 - express.createServer().set('config option', 'value')
 - Environment specific config
