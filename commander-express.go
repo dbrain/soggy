@@ -2,11 +2,12 @@ package main
 
 import (
   "./lib"
+  "./lib/middleware"
   "github.com/paulbellamy/mango"
   "encoding/json"
   "io/ioutil"
   "os"
-  "fmt"
+  "log"
 )
 var config map[string]interface{}
 var jsonHeaders = mango.Headers{"Content-Type": []string{"application/json; charset=utf-8"}}
@@ -41,18 +42,24 @@ func main() {
   if err != nil { panic(err) }
 
   config = unmarshalledConfig.(map[string]interface{})
-  fmt.Println("Loaded config for " + config["name"].(string))
+  log.Println("Loaded config for " + config["name"].(string))
 
-  app := express.NewServer();
-  app.Get("/", express.RouteHandler(func (req *express.Request, res *express.Response, env map[string]interface{}, next func(error)) {
+  server := express.NewServer("/web");
+  server.Get("/", express.RouteHandler(func (req *express.Request, res *express.Response, env map[string]interface{}, next func(error)) {
     res.Header().Set("Content-Type", "text/plain")
     res.Write([]byte("This is an example server. Hell yeah."))
   }))
-  app.All(express.ANY_PATH, express.RouteHandler(func (req *express.Request, res *express.Response, env map[string]interface{}, next func(error)) {
+  server.All(express.ANY_PATH, express.RouteHandler(func (req *express.Request, res *express.Response, env map[string]interface{}, next func(error)) {
     res.Header().Set("Content-Type", "text/plain")
     res.Write([]byte("404 Page would go here"))
   }))
-  app.Use(express.RequestLogger, app.Router)
+  server.Use(middleware.RequestLogger, server.Router)
+
+  app := express.NewApp()
+  app.AddServer(server)
+  app.AddServer(express.NewServer("/abc"))
+  app.AddServer(express.NewServer("/abc123"))
+
   app.Listen(config["host"].(string) + ":" + config["port"].(string))
 
   // routes := map[string]mango.App{

@@ -45,7 +45,7 @@ func (router *Router) Execute(req *Request, res *Response, env map[string]interf
       currentIndex := nextIndex
       nextIndex++
       route := routes[currentIndex]
-      if (route.method == req.Method || route.method == ALL_METHODS) && (route.path.MatchString(req.URL.Path)) {
+      if (route.method == req.Method || route.method == ALL_METHODS) && (route.path.MatchString(req.RelativePath)) {
         route.handler(req, res, env, next)
       } else {
         next(nil)

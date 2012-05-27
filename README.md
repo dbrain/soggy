@@ -1,3 +1,9 @@
+Body parser:
+- Parse JSON into map[string]interface{} or a specified struct.. how to specify?
+
+Head requests:
+- Maybe head requests should go into any routes and if its head it doesn't perform the writes, just the head .. or something ?
+
 How to do Next:
 - Fake loop using nexts
 - Call the first middleware passing next function (that calls the next middleware using index)
@@ -17,11 +23,9 @@ TODO:
 Handle:
 // Is mounting worthwhile at all? Guess the handler could chain servers?
 - Allow mounting, so one server can bind /api to a module that acts like a seperate app (so it can be pulled out later)
-
-
-- express.createServer() unless you can make a module act like a func
-- Make createServer return something you can pass to http.Server as a handle
+- Make createServer return something you can pass to http.Server as a handle -- app.RequestHandler is a HandlerFunc.. maybe add app.Handler() to return a handler should be simple enough (ignore until important)
 - express.createServer().listen(3000) should function (listening on 0.0.0.0:3000)
+
 - Allow for binding render handlers to filetypes via express like API e.g. exports.__express = function(filename, options, callback) through express.createServer().engine('.html', magicTemplateEngine)
 - express.createServer().use(func (req, res, next) || func (err, req, res, next)) middleware
 - express.createServer().use(express.createServer.Router) router middleware
@@ -30,6 +34,7 @@ Handle:
 - express.createServer().set('config option', 'value')
 - Environment specific config
 - Body parser middleware that will write to a parsedBody (JSON unmarshalled etc.)
+- File uploads need to work or at least make room for them
 
 
 func Handler(req, res, next) {
@@ -41,8 +46,8 @@ func ErrorHandler(err, req, res, next) {
 }
 
 func PlayingWithHeaders(...) {
-  req.Set('Content-Type', 'application/json')
-  req.Get('Content-Type')
+  res.Set('Content-Type', 'application/json')
+  res.Get('Content-Type')
 }
 
 func PlayingWithReq(...) {
