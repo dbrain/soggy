@@ -3,23 +3,19 @@ package main
 import (
   "./lib"
   "./lib/middleware"
-  "encoding/json"
-  "io/ioutil"
-  "os"
-  "log"
 )
 var config map[string]interface{}
 
 func main() {
-  configContents, err := ioutil.ReadFile(os.Getenv("HOME") + "/.commander/config.json")
-  if err != nil { panic(err) }
+  // configContents, err := ioutil.ReadFile(os.Getenv("HOME") + "/.commander/config.json")
+  // if err != nil { panic(err) }
 
-  var unmarshalledConfig interface{}
-  err = json.Unmarshal(configContents, &unmarshalledConfig)
-  if err != nil { panic(err) }
+  // var unmarshalledConfig interface{}
+  // err = json.Unmarshal(configContents, &unmarshalledConfig)
+  // if err != nil { panic(err) }
 
-  config = unmarshalledConfig.(map[string]interface{})
-  log.Println("Loaded config for " + config["name"].(string))
+  // config = unmarshalledConfig.(map[string]interface{})
+  // log.Println("Loaded config for " + config["name"].(string))
 
   server := express.NewServer("/web");
   server.Get("/", express.RouteHandler(func (req *express.Request, res *express.Response, env *express.Env, next func(error)) {
@@ -37,7 +33,8 @@ func main() {
   app.AddServer(express.NewServer("/abc"))
   app.AddServer(express.NewServer("/abc123"))
 
-  app.Listen(config["host"].(string) + ":" + config["port"].(string))
+  app.Listen("0.0.0.0:9999")
+  // app.Listen(config["host"].(string) + ":" + config["port"].(string))
 
   // routes := map[string]mango.App{
   //   "/health$": Health,
