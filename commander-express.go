@@ -3,35 +3,12 @@ package main
 import (
   "./lib"
   "./lib/middleware"
-  "github.com/paulbellamy/mango"
   "encoding/json"
   "io/ioutil"
   "os"
   "log"
 )
 var config map[string]interface{}
-var jsonHeaders = mango.Headers{"Content-Type": []string{"application/json; charset=utf-8"}}
-
-func Default(env mango.Env) (mango.Status, mango.Headers, mango.Body) {
-  return 404, mango.Headers{}, mango.Body("Not found.")
-}
-
-func Health(env mango.Env) (mango.Status, mango.Headers, mango.Body) {
-  return 200, jsonHeaders, `{ "status": "ok" }`
-}
-
-func Commands(env mango.Env) (mango.Status, mango.Headers, mango.Body) {
-  commands, err := json.Marshal(config["commands"])
-  if err != nil { return 500, jsonHeaders, `{ "error": "Exploded trying to parse the commands JSON" }` }
-
-  return 200, jsonHeaders, mango.Body(string(commands))
-}
-
-func ExecuteFunc(command map[string]interface{}) func(mango.Env) (mango.Status, mango.Headers, mango.Body) {
-  return func (env mango.Env) (mango.Status, mango.Headers, mango.Body) {
-    return 200, mango.Headers{}, mango.Body("unimplemented")
-  }
-}
 
 func main() {
   configContents, err := ioutil.ReadFile(os.Getenv("HOME") + "/.commander/config.json")
