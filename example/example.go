@@ -1,9 +1,10 @@
 package main
 
 import (
-  "./lib"
-  "./lib/middleware"
+    ".."
+    "../middleware"
 )
+
 var config map[string]interface{}
 
 func main() {
