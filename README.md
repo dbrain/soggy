@@ -5,6 +5,7 @@
   * Allows you to add routes
   * Mount servers to a path
   * Allow you to add middleware
+  * Probably breaks, first time playing with Go, most likely using pointers incorrectly.
 
 # Stuff
 The commander-express.go has some kind of example of how to use this. It's what I'm running to see I haven't broken anything.
