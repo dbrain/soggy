@@ -1,8 +1,7 @@
 package main
 
 import (
-    ".."
-    "../middleware"
+    "express.go";
 )
 
 var config map[string]interface{}
@@ -19,15 +18,15 @@ func main() {
   // log.Println("Loaded config for " + config["name"].(string))
 
   server := express.NewServer("/web");
-  server.Get("/", express.RouteHandler(func (req *express.Request, res *express.Response, env *express.Env, next func(error)) {
+  server.Get("/", func (req *express.Request, res *express.Response, env *express.Env, next func(error)) {
     res.Header().Set("Content-Type", "text/plain")
     res.Write([]byte("This is an example server. Hell yeah."))
-  }))
-  server.All(express.ANY_PATH, express.RouteHandler(func (req *express.Request, res *express.Response, env *express.Env, next func(error)) {
+  })
+  server.All(express.ANY_PATH, func (req *express.Request, res *express.Response, env *express.Env, next func(error)) {
     res.Header().Set("Content-Type", "text/plain")
     res.Write([]byte("404 Page would go here"))
-  }))
-  server.Use(middleware.RequestLogger, server.Router)
+  })
+  // server.Use(middleware.RequestLogger, server.Router)
 
   app := express.NewApp()
   app.AddServer(server)
