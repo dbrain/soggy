@@ -10,6 +10,6 @@ var BodyParser = &BodyParserMiddleware{}
 type BodyParserMiddleware struct {
 }
 
-func (bodyParser *BodyParserMiddleware) Execute(req *express.Request, res *express.Response, env *express.Env, nextMiddleware func(error)) {
+func (bodyParser *BodyParserMiddleware) Execute(req *soggy.Request, res *soggy.Response, env *soggy.Env, nextMiddleware func(error)) {
   log.Println("Body parser currently not implemented")
 }

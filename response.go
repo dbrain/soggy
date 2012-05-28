@@ -1,4 +1,4 @@
-package express
+package soggy
 
 import (
   "net/http"
@@ -6,7 +6,7 @@ import (
 
 const (
   POWERED_BY_HEADER = "X-Powered-By"
-  POWERED_BY = "express.go"
+  POWERED_BY = "sogginess"
 )
 
 type Response struct {
