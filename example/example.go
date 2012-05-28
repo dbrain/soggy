@@ -1,8 +1,8 @@
 package main
 
 import (
-    ".."
-    "../middleware"
+  ".."
+  "../middleware"
 )
 
 func main() {

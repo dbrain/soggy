@@ -18,6 +18,7 @@ TODO:
 - Fix stupid wrapping of interfaces
 - Check and fix routes
 - Move stuff to Context instead of crazy params
+- Work out packages, middleware is a seperate install
 
 Mission List:
 - Environment specific config (move the app.use etc. into a configure function, maybe)
