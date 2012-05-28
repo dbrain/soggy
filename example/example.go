@@ -3,25 +3,35 @@ package main
 import (
   ".."
   "../middleware"
+  "log"
 )
 
 func main() {
   server := soggy.NewServer("/");
-  server.Get("/i/like/cheese", func (req *soggy.Request, res *soggy.Response, env *soggy.Env, next func(error)) {
+  server.Get("/i/like/cheese", func (context *soggy.Context) {
+    res := context.Res
     res.Header().Set("Content-Type", "text/plain")
     res.Write([]byte("This is an example server. Hell yeah. It likes cheese"))
   })
-  server.Get("/i/ate/it/blah.html", func (req *soggy.Request, res *soggy.Response, env *soggy.Env, next func(error)) {
+  server.Get("/i/ate/it/blah.html", func (context *soggy.Context) {
+    res := context.Res
     res.Header().Set("Content-Type", "text/html")
     res.Write([]byte("<html><body>It ates you too</body></html>"))
   })
-  server.Get("/", func (req *soggy.Request, res *soggy.Response, env *soggy.Env, next func(error)) {
+  server.Get("/", func (context *soggy.Context) {
+    res := context.Res
     res.Header().Set("Content-Type", "text/plain")
     res.Write([]byte("This is an example server. Hell yeah."))
   })
-  server.All(soggy.ANY_PATH, func (req *soggy.Request, res *soggy.Response, env *soggy.Env, next func(error)) {
+  server.Get("/jebus", func (context *soggy.Context) {
+    log.Println("In route for /jebus")
+    // This should hit a 404 page for /jebus
+    context.Next(nil)
+  })
+  server.All(soggy.ANY_PATH, func (context *soggy.Context) {
+    res := context.Res
     res.Header().Set("Content-Type", "text/plain")
-    res.Write([]byte("404 Page would go here"))
+    res.Write([]byte("404 Page would go here for: " + context.Req.RelativePath))
   })
   server.Use(middleware.RequestLogger, server.Router)
 

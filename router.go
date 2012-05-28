@@ -25,7 +25,7 @@ type Route struct {
   handler RouteHandler
 }
 
-type RouteHandler func(*Request, *Response, *Env, func(error))
+type RouteHandler func(*Context)
 
 func (router *Router) AddRoute(method string, path string, routeHandler RouteHandler) {
   pathRegexp, err := regexp.Compile("^" + SaneURLPath(path) + "$")
@@ -33,27 +33,34 @@ func (router *Router) AddRoute(method string, path string, routeHandler RouteHan
   router.Routes = append(router.Routes, Route{ method: method, path: pathRegexp, handler: routeHandler })
 }
 
-func (router *Router) Execute(req *Request, res *Response, env *Env, nextMiddleware func(error)) {
+func (router *Router) Execute(middlewareCtx *Context) {
   var next func(error)
+  var context *Context
+
+  method := middlewareCtx.Req.Method
+  relativePath := middlewareCtx.Req.RelativePath
+
   routes := router.Routes
   maxIndex := len(routes)
   nextIndex := 0
   next = func (err error) {
     if err != nil {
-      nextMiddleware(err)
+      middlewareCtx.Next(err)
     } else if nextIndex < maxIndex {
       currentIndex := nextIndex
       nextIndex++
       route := routes[currentIndex]
-      if (route.method == req.Method || route.method == ALL_METHODS) && (route.path.MatchString(req.RelativePath)) {
-        route.handler(req, res, env, next)
+      if (route.method == method || route.method == ALL_METHODS) && (route.path.MatchString(relativePath)) {
+        route.handler(context)
       } else {
         next(nil)
       }
     } else {
-      nextMiddleware(nil)
+      middlewareCtx.Next(nil)
     }
   }
+
+  context = &Context{ middlewareCtx.Req, middlewareCtx.Res, middlewareCtx.Env, next }
   next(nil)
 }
 

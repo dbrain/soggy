@@ -11,9 +11,9 @@ var RequestLogger = &LoggerMiddleware{}
 type LoggerMiddleware struct {
 }
 
-func (requestLogger *LoggerMiddleware) Execute(req *soggy.Request, res *soggy.Response, env *soggy.Env, nextMiddleware func(error)) {
+func (requestLogger *LoggerMiddleware) Execute(context *soggy.Context) {
   startTime := time.Now()
-  log.Println("Request for", req.URL)
-  nextMiddleware(nil)
+  log.Println("Request for", context.Req.URL)
+  context.Next(nil)
   log.Println("Request took", time.Since(startTime))
 }

@@ -7,7 +7,7 @@ import (
 )
 
 type Middleware interface {
-  Execute(*Request, *Response, *Env, func(error))
+  Execute(*Context)
 }
 
 type App struct {
@@ -23,11 +23,14 @@ func (app *App) RequestHandler() http.HandlerFunc  {
   return http.HandlerFunc(func (res http.ResponseWriter, req *http.Request) {
     for _, server := range app.servers {
       if path := SaneURLPath(req.URL.Path); server.IsValidForPath(path) {
-        var next func (error)
+        var next func(error)
+        var context *Context
+
         env := NewEnv()
         wrappedReq := NewRequest(req, server)
         wrappedReq.SetRelativePath(server.Mountpoint, path)
         wrappedRes := NewResponse(res)
+
         middlewares := server.middleware
         maxIndex := len(middlewares)
         nextIndex := 0
@@ -37,9 +40,11 @@ func (app *App) RequestHandler() http.HandlerFunc  {
           } else if nextIndex < maxIndex {
             currentIndex := nextIndex
             nextIndex++
-            middlewares[currentIndex].Execute(wrappedReq, wrappedRes, env, next)
+            middlewares[currentIndex].Execute(context)
           }
         }
+
+        context = &Context{ wrappedReq, wrappedRes, env, next }
         next(nil)
         break
       }
