@@ -13,6 +13,10 @@ type Response struct {
   http.ResponseWriter
 }
 
+func (self *Response) WriteString(s string) (int, error) {
+    return self.Write([]byte(s))
+}
+
 func NewResponse(res http.ResponseWriter) *Response {
   wrappedResponse := &Response{res}
   wrappedResponse.Header().Set(POWERED_BY_HEADER, POWERED_BY)
