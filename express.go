@@ -4,7 +4,6 @@ import (
   "log"
   "net/http"
   "sort"
-  "strings"
 )
 
 type Middleware interface {
@@ -23,8 +22,7 @@ func (app *App) AddServer(server *Server) {
 func (app *App) RequestHandler() http.HandlerFunc  {
   return http.HandlerFunc(func (res http.ResponseWriter, req *http.Request) {
     for _, server := range app.servers {
-      path := req.URL.Path
-      if strings.HasPrefix(path, server.Mountpoint) {
+      if path := SaneURLPath(req.URL.Path); server.IsValidForPath(path) {
         var next func (error)
         env := NewEnv()
         wrappedReq := NewRequest(req, server)

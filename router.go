@@ -28,7 +28,7 @@ type Route struct {
 type RouteHandler func(*Request, *Response, *Env, func(error))
 
 func (router *Router) AddRoute(method string, path string, routeHandler RouteHandler) {
-  pathRegexp, err := regexp.Compile("^" + path + "$")
+  pathRegexp, err := regexp.Compile("^" + SaneURLPath(path) + "$")
   if err != nil { panic(err) }
   router.Routes = append(router.Routes, Route{ method: method, path: pathRegexp, handler: routeHandler })
 }

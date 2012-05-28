@@ -14,6 +14,11 @@ The commander-express.go has some kind of example of how to use this. It's what 
 HAHA
 
 # Developer rambling to himself goes here
+TODO:
+- Fix stupid wrapping of interfaces
+- Check and fix routes
+- Move stuff to Context instead of crazy params
+
 Mission List:
 - Environment specific config (move the app.use etc. into a configure function, maybe)
 - Parameters in URL

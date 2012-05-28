@@ -1,6 +1,7 @@
 package express
 
 import (
+  "strings"
 )
 
 type Servers []*Server
@@ -24,6 +25,14 @@ type Server struct {
   middleware []Middleware
   Router *Router
   Config ServerConfig
+}
+
+func (server *Server) SetMountpoint(mountpoint string) {
+  server.Mountpoint = SaneURLPath(mountpoint)
+}
+
+func (server *Server) IsValidForPath(path string) bool {
+  return strings.HasPrefix(path, server.Mountpoint)
 }
 
 func (server *Server) Use(middleware ...Middleware) {
@@ -51,5 +60,7 @@ func (server *Server) All(path string, routeHandler RouteHandler) {
 }
 
 func NewServer(mountpoint string) *Server {
-  return &Server{ Mountpoint: mountpoint, Router: NewRouter() }
+  server := &Server{ Router: NewRouter() }
+  server.SetMountpoint(mountpoint)
+  return server
 }

@@ -14,10 +14,7 @@ func (req *Request) SetRelativePath(mountpoint string, path string) {
   if mountpoint == "/" {
     req.RelativePath = path
   } else {
-    relativePath := path[len(mountpoint):len(path)]
-    if len(relativePath) == 0 {
-      relativePath = "/"
-    }
+    relativePath := path[len(mountpoint)-1:len(path)]
     req.RelativePath = relativePath
   }
 }
