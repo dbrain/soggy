@@ -18,9 +18,9 @@ TODO:
 - Work out packages, middleware is a seperate install
 
 Mission List:
-* Get the template engines going, server.Engine('.html', MagicHtmlEngine) where MagicHtmlEngine implements a specific interface
-* Environment specific config (move the app.use etc. into a configure function, maybe)
 * Parameters in URL
+* Get the template engines going, server.Engine('.html', MagicHtmlEngine) where MagicHtmlEngine implements a specific interface. Response.Render('file', params) to render (file can be relative to a specific path, or use server.Config vars)
+* Environment specific config (move the app.use etc. into a configure function, maybe)
 * Error Handling
 * Body Parser
 * Steal cool things from everyone else, then spread nasty rumours about their mothers.
