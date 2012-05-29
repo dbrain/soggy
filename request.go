@@ -22,9 +22,14 @@ func (req *Request) SetRelativePath(mountpoint string, path string) {
 }
 
 func NewRequest(req *http.Request, server *Server) *Request {
-  reqWrapper := &Request{}
-  reqWrapper.URL = req.URL
-  reqWrapper.Method = req.Method
-  reqWrapper.Server = server
-  return reqWrapper
+  return &Request{URL: req.URL, Method: req.Method, Server: server}
 }
+
+func newStubRequest(method, path string) *Request {
+  url, err := url.ParseRequestURI(path)
+  if err != nil {
+    panic("invalid path")
+  }
+  return &Request{URL: url, Method: method, RelativePath: path, Server: nil}
+}
+

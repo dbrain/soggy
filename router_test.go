@@ -31,21 +31,15 @@ func TestFindRoute(t *testing.T) {
   }
 }
 
-//
-// TODO currently too much of a PITA to stub out Request properly.
-//      do this later.
-//
-/*
 func TestExecuteRouteWithGoodRoute(t *testing.T) {
   router := NewRouter()
   router.AddRoute("GET", "/tehmuffin", myHandler)
   env := NewEnv()
   context := &Context{
-    Req: NewStubRequest("GET", "/tehmuffin"), Res: nil, Env: env, Next: nil}
+    Req: newStubRequest("GET", "/tehmuffin/"), Res: nil, Env: env, Next: nil}
   router.Execute(context)
-  if env["value"] == nil {
+  if context.Env["value"] == nil {
     t.Error("expected 'value' env variable to be set")
   }
 }
-*/
 
