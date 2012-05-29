@@ -15,7 +15,7 @@ HAHA
 
 # Developer rambling to himself goes here
 TODO:
-- Work out packages, middleware is a seperate install
+- Check the whole path stuff (adding trailing slashes and what not) and make sure thats functioning properly / not being done redundantly
 
 Mission List:
 * Parameters in URL
