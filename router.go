@@ -33,6 +33,19 @@ func (router *Router) AddRoute(method string, path string, routeHandler RouteHan
   router.Routes = append(router.Routes, Route{ method: method, path: pathRegexp, handler: routeHandler })
 }
 
+func (router *Router) findRoute(method, relativePath string, start int) (RouteHandler, int) {
+  routes := router.Routes
+  for i := start; i < len(routes); i++ {
+    route := routes[i];
+    if route.method == method || route.method == ALL_METHODS {
+      if route.path.MatchString(relativePath) {
+        return route.handler, i
+      }
+    }
+  }
+  return nil, -1
+}
+
 func (router *Router) Execute(middlewareCtx *Context) {
   var next func(error)
   var context *Context
@@ -40,21 +53,17 @@ func (router *Router) Execute(middlewareCtx *Context) {
   method := middlewareCtx.Req.Method
   relativePath := middlewareCtx.Req.RelativePath
 
-  routes := router.Routes
-  maxIndex := len(routes)
-  nextIndex := 0
+  n := 0
   next = func (err error) {
     if err != nil {
       middlewareCtx.Next(err)
-    } else if nextIndex < maxIndex {
-      currentIndex := nextIndex
-      nextIndex++
-      route := routes[currentIndex]
-      if (route.method == method || route.method == ALL_METHODS) && (route.path.MatchString(relativePath)) {
-        route.handler(context)
-      } else {
-        next(nil)
-      }
+      return
+    }
+
+    var handler RouteHandler
+    handler, n = router.findRoute(method, relativePath, n)
+    if handler != nil {
+      handler(context)
     } else {
       middlewareCtx.Next(nil)
     }
