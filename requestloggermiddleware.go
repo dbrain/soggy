@@ -1,17 +1,13 @@
-package middleware
+package soggy
 
 import (
   "log"
   "time"
-  ".."
 )
 
-var RequestLogger = &LoggerMiddleware{}
+type RequestLoggerMiddleware struct {}
 
-type LoggerMiddleware struct {
-}
-
-func (requestLogger *LoggerMiddleware) Execute(context *soggy.Context) {
+func (requestLogger *RequestLoggerMiddleware) Execute(context *Context) {
   startTime := time.Now()
   log.Println("Request for", context.Req.URL)
   context.Next(nil)

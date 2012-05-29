@@ -1,8 +1,7 @@
 package main
 
 import (
-  ".."
-  "../middleware"
+  "soggy"
   "log"
 )
 
@@ -33,7 +32,7 @@ func main() {
     res.Header().Set("Content-Type", "text/plain")
     res.Write([]byte("404 Page would go here for: " + context.Req.RelativePath))
   })
-  server.Use(middleware.RequestLogger, server.Router)
+  server.Use(&soggy.RequestLoggerMiddleware{}, server.Router)
 
   app := soggy.NewApp()
   app.AddServer(server)
