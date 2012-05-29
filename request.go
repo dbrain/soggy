@@ -2,12 +2,14 @@ package soggy
 
 import (
   "net/http"
+  "net/url"
 )
 
 type Request struct {
-  *http.Request
-  Server *Server
+  URL *url.URL
+  Method string
   RelativePath string
+  Server *Server
 }
 
 func (req *Request) SetRelativePath(mountpoint string, path string) {
@@ -20,5 +22,9 @@ func (req *Request) SetRelativePath(mountpoint string, path string) {
 }
 
 func NewRequest(req *http.Request, server *Server) *Request {
-  return &Request{http.Request: req, Server: server}
+  reqWrapper := &Request{}
+  reqWrapper.URL = req.URL
+  reqWrapper.Method = req.Method
+  reqWrapper.Server = server
+  return reqWrapper
 }
