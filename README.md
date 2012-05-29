@@ -24,6 +24,7 @@ Mission List:
 * Error Handling
 * Body Parser
 * Steal cool things from everyone else, then spread nasty rumours about their mothers.
+* Look into this whole FCGI / SCGI thing.
 
 Error Handling:
 - Get this working instead of just panicing

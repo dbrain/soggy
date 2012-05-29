@@ -6,8 +6,7 @@ import (
 )
 
 type Request struct {
-  URL *url.URL
-  Method string
+  *http.Request
   RelativePath string
   Server *Server
 }
@@ -22,7 +21,7 @@ func (req *Request) SetRelativePath(mountpoint string, path string) {
 }
 
 func NewRequest(req *http.Request, server *Server) *Request {
-  return &Request{URL: req.URL, Method: req.Method, Server: server}
+  return &Request{http.Request: req, Server: server}
 }
 
 func newStubRequest(method, path string) *Request {
@@ -30,6 +29,7 @@ func newStubRequest(method, path string) *Request {
   if err != nil {
     panic("invalid path")
   }
-  return &Request{URL: url, Method: method, RelativePath: path, Server: nil}
+  req := &http.Request{ URL: url, Method: method }
+  return &Request{http.Request: req, RelativePath: path, Server: nil}
 }
 
