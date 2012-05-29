@@ -5,6 +5,6 @@ import (
 
 type Env map[string]interface{}
 
-func NewEnv() *Env {
-  return &Env{}
+func NewEnv() Env {
+  return make(Env)
 }

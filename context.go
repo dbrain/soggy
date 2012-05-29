@@ -6,6 +6,6 @@ import (
 type Context struct {
   Req *Request
   Res *Response
-  Env *Env
+  Env Env
   Next func(error)
 }
