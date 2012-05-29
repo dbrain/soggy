@@ -30,5 +30,15 @@ func TestAddServerToApp(t *testing.T) {
     if len(app.servers) != 1 {
         t.Error("expected one server")
     }
+    app.AddServer(NewServer("/longerthanmuffin"))
+    if (len(app.servers) != 2) {
+        t.Error("expected 2 servers")
+    }
+    if (app.servers[0].Mountpoint != "/longerthanmuffin/") {
+        t.Error("expected longest mountpoint server to be first")
+    }
+    if (app.servers[1].Mountpoint != "/muffin/") {
+        t.Error("expected smallest mountpoint server to be last")
+    }
 }
 
