@@ -14,6 +14,9 @@ The commander-express.go has some kind of example of how to use this. It's what 
 Ok, some tests were added so it's not so HAHA worthy. But they're really basic and probably lacking coverage.
 
 # Developer rambling to himself goes here
+TODO:
+* Maybe make soggy.RequestHandler() ServeHTTP(..) (i.e. Handler interface), don't think theres a reason it couldn't be.
+
 # Parameters in URL:
 * Reflection to look at the handler.
 * If first param is pointer to Context type pass in Context

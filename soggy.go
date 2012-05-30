@@ -19,21 +19,19 @@ func (app *App) AddServer(server *Server) {
   sort.Sort(app.servers)
 }
 
-func (app *App) RequestHandler() http.HandlerFunc  {
-  return http.HandlerFunc(func (res http.ResponseWriter, req *http.Request) {
-    for _, server := range app.servers {
-      if server.IsValidForPath(SaneURLPath(req.URL.Path)) {
-        server.ServeHTTP(res, req)
-        break
-      }
+func (app *App) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+  for _, server := range app.servers {
+    if server.IsValidForPath(SaneURLPath(req.URL.Path)) {
+      server.ServeHTTP(res, req)
+      break
     }
-  })
+  }
 }
 
 func (app *App) Listen(address string) {
   httpServer := &http.Server{
     Addr: address,
-    Handler: app.RequestHandler() }
+    Handler: app }
   log.Println("Listening on", address)
   err := httpServer.ListenAndServe()
   if err != nil { panic(err) }
