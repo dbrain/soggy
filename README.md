@@ -14,11 +14,32 @@ The commander-express.go has some kind of example of how to use this. It's what 
 Ok, some tests were added so it's not so HAHA worthy. But they're really basic and probably lacking coverage.
 
 # Developer rambling to himself goes here
-TODO:
-- Look at the loop in soggy.go, can probably be changed now that servers handle the requests and nexting. Basically finding first true and running a command on it.
+# Parameters in URL:
+* Reflection to look at the handler.
+* If first param is pointer to Context type pass in Context
+* Other parameters should be passed in through the URL params
+* If the return type is specified use that to write the request, otherwise assume they'll write using ctx
+* Cache what we can on AddRoute, don't want to look this up every time.
+* Pass returns off to a responsewriter that does the magic (json, html, plain/text etc.)
+* Maybe allow for rendering from a return, e.g. return Render("template", params)
 
-Mission List:
-* Parameters in URL
+Examples
+/rah/(.*)/(.*)
+// Context and params reflected in, return is written to the res (string -> html, array|struct -> json)
+Handler(ctx *Context, param1 string, param2 string) interface{}
+// Context and params reflected in, same as above but expect user to write to the client
+Handler(ctx *Context, param1 string, param2 string)
+// Context is passed in, the params are stored in a map on the request, user writes to res
+Handler(ctx *Context)
+// No context, params passed in, return is written to res
+Handler(param1 string, param2 string) interface{}
+
+Basically web.go style, because I like it and I want to play with reflection.
+
+
+# Mission List:
+* Parameters in URL (steal web.go's reflection, or put the parameters into a map if the path doesn't match)
+* Returns should be written to the response depending on their type map, struct == json, string = html
 * Get the template engines going, server.Engine('.html', MagicHtmlEngine) where MagicHtmlEngine implements a specific interface. Response.Render('file', params) to render (file can be relative to a specific path, or use server.Config vars)
 * Environment specific config (move the app.use etc. into a configure function, maybe)
 * Error Handling
