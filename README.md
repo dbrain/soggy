@@ -11,11 +11,11 @@
 The commander-express.go has some kind of example of how to use this. It's what I'm running to see I haven't broken anything.
 
 # Testing
-HAHA
+Ok, some tests were added so it's not so HAHA worthy. But they're really basic and probably lacking coverage.
 
 # Developer rambling to himself goes here
 TODO:
-- Check the whole path stuff (adding trailing slashes and what not) and make sure thats functioning properly / not being done redundantly
+- Look at the loop in soggy.go, can probably be changed now that servers handle the requests and nexting. Basically finding first true and running a command on it.
 
 Mission List:
 * Parameters in URL

@@ -3,6 +3,7 @@ package main
 import (
   "soggy"
   "log"
+  "errors"
 )
 
 func main() {
@@ -26,6 +27,10 @@ func main() {
     log.Println("In route for /jebus")
     // This should hit a 404 page for /jebus
     context.Next(nil)
+  })
+  server.Get("/error", func (context *soggy.Context) {
+    log.Println("Im going to error")
+    context.Next(errors.New("Uh oh spaghettios"))
   })
   server.All(soggy.ANY_PATH, func (context *soggy.Context) {
     res := context.Res

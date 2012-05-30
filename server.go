@@ -2,9 +2,13 @@ package soggy
 
 import (
   "strings"
+  "net/http"
+  "log"
 )
 
 type Servers []*Server
+
+type ErrorHandler func(error, *Context)
 
 func (servers Servers) Len() int {
   return len(servers)
@@ -25,6 +29,32 @@ type Server struct {
   middleware []Middleware
   Router *Router
   Config ServerConfig
+  ErrorHandler ErrorHandler
+}
+
+func (server *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+  var next func(error)
+  var context *Context
+
+  env := NewEnv()
+  wrappedReq := NewRequest(req, server)
+  wrappedReq.SetRelativePath(server.Mountpoint, SaneURLPath(req.URL.Path))
+  wrappedRes := NewResponse(res)
+
+  middlewares := server.middleware
+  nextIndex := 0
+  next = func (err error) {
+    if err != nil {
+      server.ErrorHandler(err, context)
+    } else if nextIndex < len(middlewares) {
+      currentIndex := nextIndex
+      nextIndex++
+      middlewares[currentIndex].Execute(context)
+    }
+  }
+
+  context = &Context{ wrappedReq, wrappedRes, env, next }
+  next(nil)
 }
 
 func (server *Server) SetMountpoint(mountpoint string) {
@@ -59,8 +89,16 @@ func (server *Server) All(path string, routeHandler RouteHandler) {
   server.Router.AddRoute(ALL_METHODS, path, routeHandler);
 }
 
+func DefaultErrorHandler(err error, ctx *Context) {
+  res := ctx.Res
+  res.WriteHeader(http.StatusInternalServerError)
+  res.Write([]byte(err.Error()))
+  log.Println("An error occured for", ctx.Req.RelativePath, err)
+}
+
 func NewServer(mountpoint string) *Server {
-  server := &Server{ Router: NewRouter() }
+  server := &Server{ Router: NewRouter(), Config: make(ServerConfig),
+    ErrorHandler: DefaultErrorHandler }
   server.SetMountpoint(mountpoint)
   return server
 }
