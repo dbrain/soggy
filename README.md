@@ -14,6 +14,10 @@ The commander-express.go has some kind of example of how to use this. It's what 
 Ok, some tests were added so it's not so HAHA worthy. But they're really basic and probably lacking coverage.
 
 # Developer rambling to himself goes here
+## TODO
+* Move server on to Context instead of Request (it was put on Request before Context existed)
+* Move this kind of stuff into github issues and clean up README.md
+
 # Parameters in URL:
 * Reflection to look at the handler.
 * If first param is pointer to Context type pass in Context
