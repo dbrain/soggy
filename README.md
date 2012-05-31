@@ -15,8 +15,8 @@ Ok, some tests were added so it's not so HAHA worthy. But they're really basic a
 
 # Developer rambling to himself goes here
 ## TODO
-* Move server on to Context instead of Request (it was put on Request before Context existed)
 * Move this kind of stuff into github issues and clean up README.md
+* Minimise whats exported vs what isnt
 
 # Parameters in URL:
 * Reflection to look at the handler.

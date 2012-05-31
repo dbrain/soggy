@@ -15,6 +15,14 @@ const (
   ALL_METHODS = "*"
 
   ANY_PATH = "(.*)"
+
+  CALL_TYPE_EMPTY = iota
+  CALL_TYPE_CTX_ONLY
+  CALL_TYPE_CTX_AND_PARAMS
+  CALL_TYPE_PARAMS_ONLY
+
+  RETURN_TYPE_EMPTY = iota
+  RETURN_TYPE_STRING
 )
 
 type Router struct {
@@ -25,6 +33,28 @@ type Route struct {
   method string
   path *regexp.Regexp
   handler reflect.Value
+  callType int
+  returnType int
+}
+
+var contextType = reflect.TypeOf(Context{})
+
+func DetermineCallType(handlerType reflect.Type) int {
+  argCount := handlerType.NumIn()
+  if argCount == 0 {
+    return CALL_TYPE_EMPTY
+  }
+
+  firstArg := handlerType.In(0)
+  if firstArg.Kind() == reflect.Ptr && firstArg.Elem() == contextType {
+    if argCount > 1 {
+      return CALL_TYPE_CTX_AND_PARAMS
+    } else {
+      return CALL_TYPE_CTX_ONLY
+    }
+  }
+
+  return CALL_TYPE_PARAMS_ONLY
 }
 
 func (route Route) CallHandler(ctx *Context, relativePath string) {
@@ -35,14 +65,15 @@ func (route Route) CallHandler(ctx *Context, relativePath string) {
 }
 
 func (router *Router) AddRoute(method string, path string, handler interface{}) {
-  pathRegexp, err := regexp.Compile("^" + SaneURLPath(path) + "$")
+  rawRegex := "^" + SaneURLPath(path) + "$"
+  routeRegex, err := regexp.Compile(rawRegex)
   if err != nil {
-    log.Println("Could not compile route regex", err)
+    log.Println("Could not compile route regex", rawRegex, err)
     return
   }
-
   handlerValue := reflect.ValueOf(handler)
-  router.Routes = append(router.Routes, &Route{ method: method, path: pathRegexp, handler: handlerValue })
+  router.Routes = append(router.Routes, &Route{
+    method: method, path: routeRegex, handler: handlerValue, callType: DetermineCallType(handlerValue.Type()) })
 }
 
 func (router *Router) findRoute(method, relativePath string, start int) (*Route, int) {
@@ -81,7 +112,7 @@ func (router *Router) Execute(middlewareCtx *Context) {
     }
   }
 
-  context = &Context{ middlewareCtx.Req, middlewareCtx.Res, middlewareCtx.Env, next }
+  context = &Context{ middlewareCtx.Req, middlewareCtx.Res, middlewareCtx.Server, middlewareCtx.Env, next }
   next(nil)
 }
 

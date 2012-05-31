@@ -37,7 +37,7 @@ func (server *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
   var context *Context
 
   env := NewEnv()
-  wrappedReq := NewRequest(req, server)
+  wrappedReq := NewRequest(req)
   wrappedReq.SetRelativePath(server.Mountpoint, SaneURLPath(req.URL.Path))
   wrappedRes := NewResponse(res)
 
@@ -53,7 +53,7 @@ func (server *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
     }
   }
 
-  context = &Context{ wrappedReq, wrappedRes, env, next }
+  context = &Context{ wrappedReq, wrappedRes, server, env, next }
   next(nil)
 }
 

@@ -6,14 +6,14 @@ import (
 )
 
 func TestNewRequestTrivial(t *testing.T) {
-  request := NewRequest(&http.Request{}, &Server{})
+  request := NewRequest(&http.Request{})
   if request == nil {
     t.Error("request is nil")
   }
 }
 
 func TestSetRelativePath(t *testing.T) {
-  request := NewRequest(&http.Request{}, &Server{})
+  request := NewRequest(&http.Request{})
   if request == nil {
     t.Error("request is nil")
   }
