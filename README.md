@@ -5,7 +5,7 @@
   * Allows you to add routes
   * Mount servers to a path
   * Allow you to add middleware
-  * Probably breaks, first time playing with Go, most likely using pointers incorrectly.
+  * Probably breaks
 
 # Stuff
 The commander-express.go has some kind of example of how to use this. It's what I'm running to see I haven't broken anything.
@@ -14,9 +14,6 @@ The commander-express.go has some kind of example of how to use this. It's what 
 Ok, some tests were added so it's not so HAHA worthy. But they're really basic and probably lacking coverage.
 
 # Developer rambling to himself goes here
-TODO:
-* Maybe make soggy.RequestHandler() ServeHTTP(..) (i.e. Handler interface), don't think theres a reason it couldn't be.
-
 # Parameters in URL:
 * Reflection to look at the handler.
 * If first param is pointer to Context type pass in Context
@@ -28,13 +25,13 @@ TODO:
 
 Examples
 /rah/(.*)/(.*)
-// Context and params reflected in, return is written to the res (string -> html, array|struct -> json)
+- Context and params reflected in, return is written to the res (string -> html, array|struct -> json)
 Handler(ctx *Context, param1 string, param2 string) interface{}
-// Context and params reflected in, same as above but expect user to write to the client
+- Context and params reflected in, same as above but expect user to write to the client
 Handler(ctx *Context, param1 string, param2 string)
-// Context is passed in, the params are stored in a map on the request, user writes to res
+- Context is passed in, the params are stored in a map on the request, user writes to res
 Handler(ctx *Context)
-// No context, params passed in, return is written to res
+- No context, params passed in, return is written to res
 Handler(param1 string, param2 string) interface{}
 
 Basically web.go style, because I like it and I want to play with reflection.
