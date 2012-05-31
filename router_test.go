@@ -26,8 +26,8 @@ func TestFindRoute(t *testing.T) {
   if handler == nil {
     t.Error("expected to find a handler")
   }
-  if n != 0 {
-    t.Error("expected route index to be zero")
+  if n != 1 {
+    t.Error("expected route index to be one")
   }
 }
 

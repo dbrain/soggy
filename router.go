@@ -2,6 +2,8 @@ package soggy
 
 import (
   "regexp"
+  "log"
+  "reflect"
 )
 
 const (
@@ -16,30 +18,40 @@ const (
 )
 
 type Router struct {
-  Routes []Route
+  Routes []*Route
 }
 
 type Route struct {
   method string
   path *regexp.Regexp
-  handler RouteHandler
+  handler reflect.Value
 }
 
-type RouteHandler func(*Context)
+func (route Route) CallHandler(ctx *Context, relativePath string) {
+  // match := route.path.FindStringSubmatch(relativePath)
+  var args []reflect.Value
+  args = append(args, reflect.ValueOf(ctx))
+  route.handler.Call(args)
+}
 
-func (router *Router) AddRoute(method string, path string, routeHandler RouteHandler) {
+func (router *Router) AddRoute(method string, path string, handler interface{}) {
   pathRegexp, err := regexp.Compile("^" + SaneURLPath(path) + "$")
-  if err != nil { panic(err) }
-  router.Routes = append(router.Routes, Route{ method: method, path: pathRegexp, handler: routeHandler })
+  if err != nil {
+    log.Println("Could not compile route regex", err)
+    return
+  }
+
+  handlerValue := reflect.ValueOf(handler)
+  router.Routes = append(router.Routes, &Route{ method: method, path: pathRegexp, handler: handlerValue })
 }
 
-func (router *Router) findRoute(method, relativePath string, start int) (RouteHandler, int) {
+func (router *Router) findRoute(method, relativePath string, start int) (*Route, int) {
   routes := router.Routes
   for i := start; i < len(routes); i++ {
     route := routes[i];
     if route.method == method || route.method == ALL_METHODS {
       if route.path.MatchString(relativePath) {
-        return route.handler, i
+        return route, i + 1
       }
     }
   }
@@ -60,10 +72,10 @@ func (router *Router) Execute(middlewareCtx *Context) {
       return
     }
 
-    var handler RouteHandler
-    handler, n = router.findRoute(method, relativePath, n)
-    if handler != nil {
-      handler(context)
+    var route *Route
+    route, n = router.findRoute(method, relativePath, n)
+    if route != nil {
+      route.CallHandler(context, relativePath)
     } else {
       middlewareCtx.Next(nil)
     }
@@ -74,5 +86,5 @@ func (router *Router) Execute(middlewareCtx *Context) {
 }
 
 func NewRouter() *Router {
-  return &Router{ Routes: make([]Route, 0, 5) }
+  return &Router{ Routes: make([]*Route, 0, 5) }
 }

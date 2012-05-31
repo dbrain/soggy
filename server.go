@@ -69,23 +69,23 @@ func (server *Server) Use(middleware ...Middleware) {
   server.middleware = append(server.middleware, middleware...)
 }
 
-func (server *Server) Get(path string, routeHandler RouteHandler) {
+func (server *Server) Get(path string, routeHandler interface{}) {
   server.Router.AddRoute(GET_METHOD, path, routeHandler);
 }
 
-func (server *Server) Post(path string, routeHandler RouteHandler) {
+func (server *Server) Post(path string, routeHandler interface{}) {
   server.Router.AddRoute(POST_METHOD, path, routeHandler);
 }
 
-func (server *Server) Put(path string, routeHandler RouteHandler) {
+func (server *Server) Put(path string, routeHandler interface{}) {
   server.Router.AddRoute(PUT_METHOD, path, routeHandler);
 }
 
-func (server *Server) Delete(path string, routeHandler RouteHandler) {
+func (server *Server) Delete(path string, routeHandler interface{}) {
   server.Router.AddRoute(DELETE_METHOD, path, routeHandler);
 }
 
-func (server *Server) All(path string, routeHandler RouteHandler) {
+func (server *Server) All(path string, routeHandler interface{}) {
   server.Router.AddRoute(ALL_METHODS, path, routeHandler);
 }
 
