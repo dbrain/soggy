@@ -19,6 +19,7 @@ Ok, some tests were added so it's not so HAHA worthy. But they're really basic a
 * Minimise whats exported vs what isnt
 
 # Parameters in URL:
+* Named, see Gorilla's pat (/rah/{placeholder}/thing) or just regex
 * Reflection to look at the handler.
 * If first param is pointer to Context type pass in Context
 * Other parameters should be passed in through the URL params

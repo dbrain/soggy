@@ -4,6 +4,22 @@ import (
   "regexp"
   "log"
   "reflect"
+  "errors"
+  "net/http"
+)
+
+const (
+  CALL_TYPE_EMPTY = iota
+  CALL_TYPE_CTX_ONLY
+  CALL_TYPE_CTX_AND_PARAMS
+  CALL_TYPE_PARAMS_ONLY
+)
+
+const (
+  RETURN_TYPE_EMPTY = iota
+  RETURN_TYPE_STRING
+  RETURN_TYPE_JSON
+  RETURN_TYPE_RENDER
 )
 
 const (
@@ -15,14 +31,6 @@ const (
   ALL_METHODS = "*"
 
   ANY_PATH = "(.*)"
-
-  CALL_TYPE_EMPTY = iota
-  CALL_TYPE_CTX_ONLY
-  CALL_TYPE_CTX_AND_PARAMS
-  CALL_TYPE_PARAMS_ONLY
-
-  RETURN_TYPE_EMPTY = iota
-  RETURN_TYPE_STRING
 )
 
 type Router struct {
@@ -33,35 +41,119 @@ type Route struct {
   method string
   path *regexp.Regexp
   handler reflect.Value
+  argCount int
   callType int
   returnType int
+  returnHasError bool
 }
 
 var contextType = reflect.TypeOf(Context{})
+var errorType = reflect.TypeOf(errors.New(""))
 
-func DetermineCallType(handlerType reflect.Type) int {
+func DetermineCallType(handlerType reflect.Type) (int, int) {
   argCount := handlerType.NumIn()
   if argCount == 0 {
-    return CALL_TYPE_EMPTY
+    return CALL_TYPE_EMPTY, argCount
   }
 
   firstArg := handlerType.In(0)
   if firstArg.Kind() == reflect.Ptr && firstArg.Elem() == contextType {
     if argCount > 1 {
-      return CALL_TYPE_CTX_AND_PARAMS
+      return CALL_TYPE_CTX_AND_PARAMS, argCount
     } else {
-      return CALL_TYPE_CTX_ONLY
+      return CALL_TYPE_CTX_ONLY, argCount
     }
   }
 
-  return CALL_TYPE_PARAMS_ONLY
+  return CALL_TYPE_PARAMS_ONLY, argCount
 }
 
-func (route Route) CallHandler(ctx *Context, relativePath string) {
-  // match := route.path.FindStringSubmatch(relativePath)
+func DetermineReturnType(handlerType reflect.Type) (int, bool) {
+  outCount := handlerType.NumOut();
+  if outCount == 0 {
+    return RETURN_TYPE_EMPTY, false
+  }
+
+  hasError := handlerType.Out(outCount - 1) == errorType
+  if hasError { outCount-- }
+  if outCount == 0 {
+    return RETURN_TYPE_EMPTY, hasError
+  }
+
+  if outCount > 2 {
+    panic("Handler has more return values than expected.")
+  } else if outCount == 2 {
+    return RETURN_TYPE_RENDER, hasError
+  } else if handlerType.Out(0).Kind() == reflect.String {
+    return RETURN_TYPE_STRING, hasError
+  }
+
+  return RETURN_TYPE_JSON, hasError
+}
+
+func (route *Route) CallHandler(ctx *Context, relativePath string) {
   var args []reflect.Value
-  args = append(args, reflect.ValueOf(ctx))
-  route.handler.Call(args)
+  callType, returnType := route.callType, route.returnType
+
+  urlParams := route.path.FindStringSubmatch(relativePath)[1:]
+  ctx.Req.URLParams = urlParams
+
+  if callType != CALL_TYPE_EMPTY {
+    if callType == CALL_TYPE_CTX_ONLY || callType == CALL_TYPE_CTX_AND_PARAMS {
+      args = append(args, reflect.ValueOf(ctx))
+    }
+    if callType == CALL_TYPE_PARAMS_ONLY || callType == CALL_TYPE_CTX_AND_PARAMS {
+      for _, param := range urlParams {
+        args = append(args, reflect.ValueOf(param))
+      }
+    }
+  }
+
+  if len(args) < route.argCount {
+    log.Println("Route", route.path.String(), "expects", route.argCount, "arguments but only got", len(args))
+    for len(args) < route.argCount {
+      args = append(args, reflect.ValueOf(""))
+    }
+  }
+
+  result, err := route.safelyCall(args)
+  if err != nil {
+    ctx.Next(err)
+    return
+  }
+
+  if route.returnHasError {
+    err = result[len(result)-1]
+    if err != nil {
+      ctx.Next(err)
+      return
+    }
+  }
+
+  switch returnType {
+    case RETURN_TYPE_EMPTY:
+      return
+    case RETURN_TYPE_RENDER:
+      err = ctx.Res.Render(http.StatusOK, result[0].String(), result[1].Interface())
+    case RETURN_TYPE_STRING:
+      err = ctx.Res.Html(http.StatusOK, result[0].String())
+    case RETURN_TYPE_JSON:
+      err = ctx.Res.Json(http.StatusOK, result[0].Interface())
+  }
+
+  if err != nil {
+    ctx.Next(err)
+  }
+}
+
+func (route *Route) safelyCall(args []reflect.Value) (result []reflect.Value, err interface{}) {
+  defer func() {
+    if err := recover(); err != nil {
+      result = nil
+      log.Println("Handler for route", route.path.String(), "paniced with", err)
+    }
+  }()
+  return route.handler.Call(args), nil
 }
 
 func (router *Router) AddRoute(method string, path string, handler interface{}) {
@@ -72,8 +164,12 @@ func (router *Router) AddRoute(method string, path string, handler interface{}) 
     return
   }
   handlerValue := reflect.ValueOf(handler)
-  router.Routes = append(router.Routes, &Route{
-    method: method, path: routeRegex, handler: handlerValue, callType: DetermineCallType(handlerValue.Type()) })
+  handlerType := handlerValue.Type()
+  route := &Route{ method: method, path: routeRegex, handler: handlerValue }
+  route.callType, route.argCount = DetermineCallType(handlerType)
+  route.returnType, route.returnHasError = DetermineReturnType(handlerType)
+
+  router.Routes = append(router.Routes, route)
 }
 
 func (router *Router) findRoute(method, relativePath string, start int) (*Route, int) {
@@ -90,14 +186,14 @@ func (router *Router) findRoute(method, relativePath string, start int) (*Route,
 }
 
 func (router *Router) Execute(middlewareCtx *Context) {
-  var next func(error)
+  var next func(interface{})
   var context *Context
 
   method := middlewareCtx.Req.Method
   relativePath := middlewareCtx.Req.RelativePath
 
   n := 0
-  next = func (err error) {
+  next = func (err interface{}) {
     if err != nil {
       middlewareCtx.Next(err)
       return

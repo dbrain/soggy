@@ -8,7 +8,7 @@ import (
 
 type Servers []*Server
 
-type ErrorHandler func(error, *Context)
+type ErrorHandler func(interface{}, *Context)
 
 func (servers Servers) Len() int {
   return len(servers)
@@ -33,7 +33,7 @@ type Server struct {
 }
 
 func (server *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-  var next func(error)
+  var next func(interface{})
   var context *Context
 
   env := NewEnv()
@@ -43,7 +43,7 @@ func (server *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
   middlewares := server.middleware
   nextIndex := 0
-  next = func (err error) {
+  next = func (err interface{}) {
     if err != nil {
       server.ErrorHandler(err, context)
     } else if nextIndex < len(middlewares) {
@@ -89,10 +89,18 @@ func (server *Server) All(path string, routeHandler interface{}) {
   server.Router.AddRoute(ALL_METHODS, path, routeHandler);
 }
 
-func DefaultErrorHandler(err error, ctx *Context) {
+func DefaultErrorHandler(err interface{}, ctx *Context) {
   res := ctx.Res
   res.WriteHeader(http.StatusInternalServerError)
-  res.Write([]byte(err.Error()))
+  switch err.(type) {
+    case error:
+      res.Write([]byte(err.(error).Error()))
+    case string:
+      res.Write([]byte(err.(string)))
+    default:
+      res.Write([]byte("An error occured processing your request"))
+  }
+
   log.Println("An error occured for", ctx.Req.RelativePath, err)
 }
 

@@ -32,6 +32,14 @@ func main() {
     log.Println("Im going to error")
     context.Next(errors.New("Uh oh spaghettios"))
   })
+  server.Get("/echo/(.*)", func (echo string) string {
+    return echo
+  })
+  server.Get("/json/(.*)", func (echo string) interface{} {
+    echoMap := make(map[string]string)
+    echoMap["echo"] = echo
+    return echoMap
+  })
   server.All(soggy.ANY_PATH, func (context *soggy.Context) {
     res := context.Res
     res.Header().Set("Content-Type", "text/plain")

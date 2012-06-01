@@ -8,7 +8,7 @@ type Context struct {
   Res *Response
   Server *Server
   Env Env
-  Next func(error)
+  Next func(interface{})
 }
 
 func NewContext(server *Server) *Context {

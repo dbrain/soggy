@@ -5,9 +5,12 @@ import (
   "net/url"
 )
 
+type URLParams []string
+
 type Request struct {
   *http.Request
   RelativePath string
+  URLParams URLParams
 }
 
 func (req *Request) SetRelativePath(mountpoint string, path string) {
@@ -20,7 +23,7 @@ func (req *Request) SetRelativePath(mountpoint string, path string) {
 }
 
 func NewRequest(req *http.Request) *Request {
-  return &Request{http.Request: req}
+  return &Request{http.Request: req, URLParams: make(URLParams, 2)}
 }
 
 func newStubRequest(method, path string) *Request {
