@@ -1,10 +1,12 @@
 package soggy
 
 import (
-  "log"
   "net/http"
   "mime"
   "encoding/json"
+  "bytes"
+  "os"
+  "io"
 )
 
 const (
@@ -17,20 +19,38 @@ type Response struct {
   server *Server
 }
 
-func (res *Response) Render(status int, file string, params interface{}) error {
-  res.WriteHeader(status)
-  log.Println("Would have rendered", file, "with", params, "if this was implemented.")
-  return nil
-}
-
-func (res *Response) Html(status int, html string) error {
+func (res *Response) Render(status int, file string, params interface{}) (err interface{}) {
   res.WriteHeader(status)
   res.Set("Content-Type", mime.TypeByExtension(".html"))
-  _, err := res.WriteString(html)
+  buf := new(bytes.Buffer)
+
+  ext, template := res.server.TemplatePath(file)
+  if _, err := os.Stat(template); err != nil {
+    return err
+  }
+
+  engine := res.server.TemplateEngines[ext[1:]]
+  if engine == nil {
+    return "No engine defined for " + ext[1:]
+  }
+
+  err = engine(buf, template, params)
+  if err != nil {
+    return err
+  }
+  res.Set("Content-Length", string(buf.Len()))
+  _, err = io.Copy(res, buf)
   return err
 }
 
-func (res *Response) Json(status int, jsonIn interface{}) error {
+func (res *Response) Html(status int, html string) (err interface{}) {
+  res.WriteHeader(status)
+  res.Set("Content-Type", mime.TypeByExtension(".html"))
+  _, err = res.WriteString(html)
+  return err
+}
+
+func (res *Response) Json(status int, jsonIn interface{}) (err interface{}) {
   res.WriteHeader(status)
   res.Set("Content-Type", mime.TypeByExtension(".json"))
   jsonOut, err := json.Marshal(jsonIn)

@@ -4,6 +4,13 @@ import (
   "strings"
   "net/http"
   "log"
+  "io"
+  "path/filepath"
+)
+
+const (
+  CONFIG_VIEW_PATH = "viewPath"
+  DEFAULT_VIEW_PATH = "views"
 )
 
 type Servers []*Server
@@ -23,6 +30,15 @@ func (servers Servers) Swap(i, j int) {
 }
 
 type ServerConfig map[string]interface{}
+
+func (config ServerConfig) ViewPath(viewPath string) error {
+  viewPath, err := filepath.Abs(viewPath)
+  if err != nil {
+    return err
+  }
+  config[CONFIG_VIEW_PATH] = viewPath
+  return nil
+}
 
 type Server struct {
   Mountpoint string
@@ -58,6 +74,11 @@ func (server *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
   next(nil)
 }
 
+func (server *Server) TemplatePath(filename string) (ext, path string) {
+  filePath := filepath.Join(server.Config[CONFIG_VIEW_PATH].(string), filename)
+  return filepath.Ext(filePath), filePath
+}
+
 func (server *Server) SetMountpoint(mountpoint string) {
   server.Mountpoint = SaneURLPath(mountpoint)
 }
@@ -67,8 +88,8 @@ func (server *Server) IsValidForPath(path string) bool {
 }
 
 func (server *Server) Engine(ext string, engine TemplateEngine) {
-  server.EngineFunc(ext, func(filename string, options interface{}) ([]byte, error) {
-    return engine.SoggyEngine(filename, options);
+  server.EngineFunc(ext, func(writer io.Writer, filename string, options interface{}) error {
+    return engine.SoggyEngine(writer, filename, options);
   })
 }
 
@@ -116,8 +137,17 @@ func DefaultErrorHandler(err interface{}, ctx *Context) {
 }
 
 func NewServer(mountpoint string) *Server {
-  server := &Server{ Router: NewRouter(), Config: make(ServerConfig),
-    ErrorHandler: DefaultErrorHandler, TemplateEngines: make(map[string]TemplateEngineFunc) }
+  server := &Server{ Router: NewRouter(),
+    Config: NewServerConfig(),
+    ErrorHandler: DefaultErrorHandler,
+    TemplateEngines: make(map[string]TemplateEngineFunc) }
   server.SetMountpoint(mountpoint)
+  server.Engine("html", &HTMLTemplateEngine{})
   return server
+}
+
+func NewServerConfig() ServerConfig {
+  config := make(ServerConfig)
+  config.ViewPath(DEFAULT_VIEW_PATH)
+  return config
 }

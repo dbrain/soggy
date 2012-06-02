@@ -1,16 +1,17 @@
 package soggy
 
 import (
+  "io"
   "log"
   "net/http"
   "sort"
 )
 
 type TemplateEngine interface {
-  SoggyEngine(filename string, options interface{}) ([]byte, error)
+  SoggyEngine(writer io.Writer, filename string, options interface{}) error
 }
 
-type TemplateEngineFunc func(filename string, options interface{}) ([]byte, error)
+type TemplateEngineFunc func(writer io.Writer, filename string, options interface{}) error
 
 type Middleware interface {
   Execute(*Context)
