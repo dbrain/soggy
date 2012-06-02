@@ -4,7 +4,6 @@ import (
   "regexp"
   "log"
   "reflect"
-  "errors"
   "net/http"
 )
 
@@ -50,7 +49,7 @@ type Route struct {
 }
 
 var contextType = reflect.TypeOf(Context{})
-var errorType = reflect.TypeOf(errors.New(""))
+var errorType = reflect.TypeOf((*error)(nil)).Elem()
 
 func DetermineCallType(handlerType reflect.Type) (int, int) {
   argCount := handlerType.NumIn()
@@ -112,7 +111,7 @@ func (route *Route) CallHandler(ctx *Context, relativePath string) {
   }
 
   if len(args) < route.argCount {
-    log.Println("Route", route.path.String(), "expects", route.argCount, "arguments but only got", len(args))
+    log.Println("Route", route.path.String(), "expects", route.argCount, "arguments but only got", len(args), ". Padding.")
     for len(args) < route.argCount {
       args = append(args, reflect.ValueOf(""))
     }
@@ -131,11 +130,10 @@ func (route *Route) CallHandler(ctx *Context, relativePath string) {
 }
 
 func (route *Route) renderResult(ctx *Context, result []reflect.Value) interface{} {
-  var err interface{}
   if route.returnHasError {
-    err = result[len(result)-1]
-    if err != nil {
-      return err
+    err := result[len(result)-1]
+    if !err.IsNil() {
+      return err.Interface()
     }
   }
 
@@ -164,7 +162,7 @@ func (router *Router) AddRoute(method string, path string, handler interface{}) 
   rawRegex := "^" + SaneURLPath(path) + "$"
   routeRegex, err := regexp.Compile(rawRegex)
   if err != nil {
-    log.Println("Could not compile route regex", rawRegex, err)
+    log.Println("Could not compile route regex", rawRegex, ":", err)
     return
   }
   handlerValue := reflect.ValueOf(handler)
@@ -196,7 +194,7 @@ func (router *Router) Execute(middlewareCtx *Context) {
   method := middlewareCtx.Req.Method
   relativePath := middlewareCtx.Req.RelativePath
 
-  n := 0
+  routeIndex := 0
   next = func (err interface{}) {
     if err != nil {
       middlewareCtx.Next(err)
@@ -204,7 +202,7 @@ func (router *Router) Execute(middlewareCtx *Context) {
     }
 
     var route *Route
-    route, n = router.findRoute(method, relativePath, n)
+    route, routeIndex = router.findRoute(method, relativePath, routeIndex)
     if route != nil {
       route.CallHandler(context, relativePath)
     } else {

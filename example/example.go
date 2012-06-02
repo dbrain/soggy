@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-  server := soggy.NewServer("/");
+  app, server := soggy.NewDefaultApp()
   server.Get("/i/like/cheese", func (context *soggy.Context) {
     res := context.Res
     res.Header().Set("Content-Type", "text/plain")
@@ -47,8 +47,6 @@ func main() {
   })
   server.Use(&soggy.RequestLoggerMiddleware{}, server.Router)
 
-  app := soggy.NewApp()
-  app.AddServer(server)
   app.AddServer(soggy.NewServer("/abc"))
   app.AddServer(soggy.NewServer("/abc123"))
 

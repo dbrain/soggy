@@ -39,7 +39,7 @@ func (app *App) Listen(address string) {
   httpServer := &http.Server{
     Addr: address,
     Handler: app }
-  log.Println("Listening on", address)
+  log.Println("Starting to listen on", address)
   err := httpServer.ListenAndServe()
   if err != nil { panic(err) }
 }
