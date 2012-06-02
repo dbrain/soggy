@@ -15,7 +15,7 @@ const (
 
 type Servers []*Server
 
-type ErrorHandler func(interface{}, *Context)
+type ErrorHandler func(*Context, interface{})
 
 func (servers Servers) Len() int {
   return len(servers)
@@ -62,7 +62,7 @@ func (server *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
   nextIndex := 0
   next = func (err interface{}) {
     if err != nil {
-      server.ErrorHandler(err, context)
+      server.ErrorHandler(context, err)
     } else if nextIndex < len(middlewares) {
       currentIndex := nextIndex
       nextIndex++
@@ -121,7 +121,7 @@ func (server *Server) All(path string, routeHandler interface{}) {
   server.Router.AddRoute(ALL_METHODS, path, routeHandler);
 }
 
-func DefaultErrorHandler(err interface{}, ctx *Context) {
+func DefaultErrorHandler(ctx *Context, err interface{}) {
   res := ctx.Res
   res.WriteHeader(http.StatusInternalServerError)
   switch err.(type) {
