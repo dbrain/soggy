@@ -6,6 +6,12 @@ import (
   "sort"
 )
 
+type TemplateEngine interface {
+  SoggyEngine(filename string, options interface{}) ([]byte, error)
+}
+
+type TemplateEngineFunc func(filename string, options interface{}) ([]byte, error)
+
 type Middleware interface {
   Execute(*Context)
 }

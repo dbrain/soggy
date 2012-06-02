@@ -30,6 +30,7 @@ type Server struct {
   Router *Router
   Config ServerConfig
   ErrorHandler ErrorHandler
+  TemplateEngines map[string]TemplateEngineFunc
 }
 
 func (server *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
@@ -39,7 +40,7 @@ func (server *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
   env := NewEnv()
   wrappedReq := NewRequest(req)
   wrappedReq.SetRelativePath(server.Mountpoint, SaneURLPath(req.URL.Path))
-  wrappedRes := NewResponse(res)
+  wrappedRes := NewResponse(res, server)
 
   middlewares := server.middleware
   nextIndex := 0
@@ -63,6 +64,16 @@ func (server *Server) SetMountpoint(mountpoint string) {
 
 func (server *Server) IsValidForPath(path string) bool {
   return strings.HasPrefix(path, server.Mountpoint)
+}
+
+func (server *Server) Engine(ext string, engine TemplateEngine) {
+  server.EngineFunc(ext, func(filename string, options interface{}) ([]byte, error) {
+    return engine.SoggyEngine(filename, options);
+  })
+}
+
+func (server *Server) EngineFunc(ext string, engineFunc TemplateEngineFunc) {
+  server.TemplateEngines[ext] = engineFunc
 }
 
 func (server *Server) Use(middleware ...Middleware) {
@@ -106,7 +117,7 @@ func DefaultErrorHandler(err interface{}, ctx *Context) {
 
 func NewServer(mountpoint string) *Server {
   server := &Server{ Router: NewRouter(), Config: make(ServerConfig),
-    ErrorHandler: DefaultErrorHandler }
+    ErrorHandler: DefaultErrorHandler, TemplateEngines: make(map[string]TemplateEngineFunc) }
   server.SetMountpoint(mountpoint)
   return server
 }

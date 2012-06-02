@@ -14,20 +14,24 @@ const (
 
 type Response struct {
   http.ResponseWriter
+  server *Server
 }
 
 func (res *Response) Render(status int, file string, params interface{}) error {
+  res.WriteHeader(status)
   log.Println("Would have rendered", file, "with", params, "if this was implemented.")
   return nil
 }
 
 func (res *Response) Html(status int, html string) error {
+  res.WriteHeader(status)
   res.Set("Content-Type", mime.TypeByExtension(".html"))
   _, err := res.WriteString(html)
   return err
 }
 
 func (res *Response) Json(status int, jsonIn interface{}) error {
+  res.WriteHeader(status)
   res.Set("Content-Type", mime.TypeByExtension(".json"))
   jsonOut, err := json.Marshal(jsonIn)
   if err == nil {
@@ -44,8 +48,8 @@ func (res *Response) Set(header, value string) {
     res.Header().Set(header, value)
 }
 
-func NewResponse(res http.ResponseWriter) *Response {
-  wrappedResponse := &Response{res}
+func NewResponse(res http.ResponseWriter, server *Server) *Response {
+  wrappedResponse := &Response{res, server}
   wrappedResponse.Set(POWERED_BY_HEADER, POWERED_BY)
   return wrappedResponse;
 }

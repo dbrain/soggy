@@ -29,7 +29,9 @@ const (
   PUT_METHOD = "PUT"
   HEAD_METHOD = "HEAD"
   ALL_METHODS = "*"
+)
 
+const (
   ANY_PATH = "(.*)"
 )
 
@@ -93,7 +95,7 @@ func DetermineReturnType(handlerType reflect.Type) (int, bool) {
 
 func (route *Route) CallHandler(ctx *Context, relativePath string) {
   var args []reflect.Value
-  callType, returnType := route.callType, route.returnType
+  callType := route.callType
 
   urlParams := route.path.FindStringSubmatch(relativePath)[1:]
   ctx.Req.URLParams = urlParams
@@ -122,38 +124,40 @@ func (route *Route) CallHandler(ctx *Context, relativePath string) {
     return
   }
 
-  if route.returnHasError {
-    err = result[len(result)-1]
-    if err != nil {
-      ctx.Next(err)
-      return
-    }
-  }
-
-  switch returnType {
-    case RETURN_TYPE_EMPTY:
-      return
-    case RETURN_TYPE_RENDER:
-      err = ctx.Res.Render(http.StatusOK, result[0].String(), result[1].Interface())
-    case RETURN_TYPE_STRING:
-      err = ctx.Res.Html(http.StatusOK, result[0].String())
-    case RETURN_TYPE_JSON:
-      err = ctx.Res.Json(http.StatusOK, result[0].Interface())
-  }
-
+  err = route.renderResult(ctx, result)
   if err != nil {
     ctx.Next(err)
   }
 }
 
-func (route *Route) safelyCall(args []reflect.Value) (result []reflect.Value, err interface{}) {
-  defer func() {
-    if err := recover(); err != nil {
-      result = nil
-      log.Println("Handler for route", route.path.String(), "paniced with", err)
+func (route *Route) renderResult(ctx *Context, result []reflect.Value) interface{} {
+  var err interface{}
+  if route.returnHasError {
+    err = result[len(result)-1]
+    if err != nil {
+      return err
     }
-  }()
-  return route.handler.Call(args), nil
+  }
+
+  switch route.returnType {
+    case RETURN_TYPE_EMPTY:
+      return nil
+    case RETURN_TYPE_RENDER:
+      return ctx.Res.Render(http.StatusOK, result[0].String(), result[1].Interface())
+    case RETURN_TYPE_STRING:
+      return ctx.Res.Html(http.StatusOK, result[0].String())
+    case RETURN_TYPE_JSON:
+      return ctx.Res.Json(http.StatusOK, result[0].Interface())
+  }
+  return nil
+}
+
+func (route *Route) safelyCall(args []reflect.Value) (result []reflect.Value, err interface{}) {
+  result = route.handler.Call(args)
+  if err = recover(); err != nil {
+    log.Println("Handler for route", route.path.String(), "paniced with", err)
+  }
+  return result, err
 }
 
 func (router *Router) AddRoute(method string, path string, handler interface{}) {
