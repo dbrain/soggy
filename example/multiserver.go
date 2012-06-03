@@ -1,7 +1,7 @@
 package main
 
 import (
-  "soggy"
+  "github.com/dbrain/soggy"
 )
 
 type APIGetExample struct {
