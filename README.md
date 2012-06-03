@@ -16,6 +16,7 @@ app.Listen("0.0.0.0:9999")
   * HTTP helpers
   * Server mounting
   * Easily pluggable view system
+  * App/Server implement http.Handler, can use with your own http.Server
   * Speed of Go
 
 ## Installation
