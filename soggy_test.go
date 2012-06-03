@@ -26,11 +26,11 @@ func TestAddServerToApp(t *testing.T) {
     if len(app.servers) != 0 {
         t.Error("expected zero servers")
     }
-    app.AddServer(NewServer("/muffin"))
+    app.AddServers(NewServer("/muffin"))
     if len(app.servers) != 1 {
         t.Error("expected one server")
     }
-    app.AddServer(NewServer("/longerthanmuffin"))
+    app.AddServers(NewServer("/longerthanmuffin"))
     if (len(app.servers) != 2) {
         t.Error("expected 2 servers")
     }

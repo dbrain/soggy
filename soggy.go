@@ -21,8 +21,10 @@ type App struct {
   servers Servers
 }
 
-func (app *App) AddServer(server *Server) {
-  app.servers = append(app.servers, server)
+func (app *App) AddServers(servers ...*Server) {
+  for _, server := range servers {
+    app.servers = append(app.servers, server)
+  }
   sort.Sort(app.servers)
 }
 
@@ -51,6 +53,6 @@ func NewApp() *App {
 func NewDefaultApp() (*App, *Server) {
   app := NewApp()
   server := NewServer("/")
-  app.AddServer(server)
+  app.AddServers(server)
   return app, server
 }

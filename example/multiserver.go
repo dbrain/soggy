@@ -1,0 +1,54 @@
+package main
+
+import (
+  "soggy"
+)
+
+type APIGetExample struct {
+  Name string
+  Age int
+}
+
+func WebServer() *soggy.Server {
+  server := soggy.NewServer("/")
+  server.Get("/", func (ctx *soggy.Context) (template string, opts interface{}) {
+    return "multiserver_root.html", map[string]string{ "ip": ctx.Req.RemoteAddr }
+  })
+  server.Get("/about", func () string {
+    return "How can you ask questions, when you have no mouth."
+  })
+  server.Use(&soggy.RequestLoggerMiddleware{}, server.Router)
+  return server
+}
+
+func APIServer() *soggy.Server {
+  server := soggy.NewServer("/api")
+  server.Get("/whoami", func () *APIGetExample {
+    return &APIGetExample{"Daniel Brain", 27}
+  })
+  server.Post("/echo/(.*)/(.*)", func (key string, value string) map[string]string {
+    result := make(map[string]string)
+    result[key] = value
+    return result
+  })
+  server.Use(&soggy.RequestLoggerMiddleware{}, server.Router)
+  return server
+}
+
+func AdminServer() *soggy.Server {
+  server := soggy.NewServer("/admin")
+  server.Get("/", func (ctx *soggy.Context) (template string, opts interface{}) {
+    return "multiserver_admin.html", map[string]string{ "ip": ctx.Req.RemoteAddr }
+  })
+  server.Get("/hacks", func () string {
+    return "You gosh darn hacked my admin section."
+  })
+  server.Use(&soggy.RequestLoggerMiddleware{}, server.Router)
+  return server
+}
+
+func main() {
+  app := soggy.NewApp()
+  app.AddServers(WebServer(), APIServer(), AdminServer())
+  app.Listen("0.0.0.0:9999")
+}
