@@ -115,6 +115,9 @@ func (route *Route) CallHandler(ctx *Context, relativePath string) {
     for len(args) < route.argCount {
       args = append(args, reflect.ValueOf(""))
     }
+  } else if len(args) > route.argCount {
+    log.Println("Route", route.path.String(), "expects", route.argCount, "arguments but got", len(args), ". Trimming.")
+    args = args[:route.argCount]
   }
 
   result, err := route.safelyCall(args)
@@ -151,11 +154,12 @@ func (route *Route) renderResult(ctx *Context, result []reflect.Value) interface
 }
 
 func (route *Route) safelyCall(args []reflect.Value) (result []reflect.Value, err interface{}) {
-  result = route.handler.Call(args)
-  if err = recover(); err != nil {
-    log.Println("Handler for route", route.path.String(), "paniced with", err)
-  }
-  return result, err
+  defer func() {
+    if err = recover(); err != nil {
+      log.Println("Handler for route", route.path.String(), "paniced with", err)
+    }
+  }()
+  return route.handler.Call(args), err
 }
 
 func (router *Router) AddRoute(method string, path string, handler interface{}) {
