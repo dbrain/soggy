@@ -68,6 +68,10 @@ func (route *Route) CacheCallType() {
     return
   }
 
+  if handlerType.Kind() != reflect.Func {
+    panic("Route handlers must a http.Handler or a func. Broken for " + route.path.String())
+  }
+
   argCount := handlerType.NumIn()
   route.argCount = argCount
   if argCount == 0 {

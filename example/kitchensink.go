@@ -10,7 +10,7 @@ import (
 )
 
 type HandlerExample struct {}
-func (handlerEx *HandlerExample) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+func (handlerEx HandlerExample) ServeHTTP(res http.ResponseWriter, req *http.Request) {
   res.Write([]byte("Oh what a lovely handler"))
 }
 
@@ -28,6 +28,9 @@ type TemplateExample struct {
 
 func main() {
   app, server := soggy.NewDefaultApp()
+
+  // You can use normal handlers that arent pointers
+  server.Get("/handlerValue", HandlerExample{})
 
   // You can use normal handlers as routes
   server.Get("/handler", &HandlerExample{})
