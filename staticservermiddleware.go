@@ -5,7 +5,6 @@ import (
   "path/filepath"
   "strings"
   "os"
-  "log"
 )
 
 type StaticServerMiddleware struct {
@@ -28,7 +27,6 @@ func (staticServer *StaticServerMiddleware) Execute(ctx *Context) {
   if (req.Method == GET_METHOD || req.Method == HEAD_METHOD) && staticServer.IsValidForPath(req.RelativePath) {
     staticPath := ctx.Server.Config[CONFIG_STATIC_PATH].(string)
     staticFile := filepath.Join(staticPath, staticServer.GetRelativeFilePath(req.RelativePath))
-    log.Println("Filepath is", staticFile)
     if stat, err := os.Stat(staticFile); err == nil && !stat.IsDir() {
       http.ServeFile(ctx.Res, req.OriginalRequest, staticFile)
     } else {
