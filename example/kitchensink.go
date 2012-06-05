@@ -1,8 +1,7 @@
 package main
 
 import (
-  //"github.com/dbrain/soggy"
-  ".."
+  "github.com/dbrain/soggy"
   "log"
   "errors"
   "fmt"

@@ -12,6 +12,7 @@ const (
   CALL_TYPE_CTX_ONLY
   CALL_TYPE_CTX_AND_PARAMS
   CALL_TYPE_PARAMS_ONLY
+  CALL_TYPE_HANDLER_FUNC
 )
 
 const (
@@ -49,47 +50,81 @@ type Route struct {
 }
 
 var contextType = reflect.TypeOf(Context{})
+var requestType = reflect.TypeOf(http.Request{})
 var errorType = reflect.TypeOf((*error)(nil)).Elem()
+var httpHandlerType = reflect.TypeOf((*http.Handler)(nil)).Elem()
+var httpResponseWriterType = reflect.TypeOf((*http.ResponseWriter)(nil)).Elem()
 
-func DetermineCallType(handlerType reflect.Type) (int, int) {
+func (route *Route) CacheCallType() {
+  handlerType := route.handler.Type()
+
+  if (handlerType.Kind() == reflect.Ptr && handlerType.Elem().Implements(httpHandlerType)) || handlerType.Implements(httpHandlerType) {
+    httpHandler := route.handler.Interface().(http.Handler)
+    route.handler = reflect.ValueOf(func (res http.ResponseWriter, req *http.Request) {
+      httpHandler.ServeHTTP(res, req)
+    })
+    route.callType = CALL_TYPE_HANDLER_FUNC
+    route.argCount = 2
+    return
+  }
+
   argCount := handlerType.NumIn()
+  route.argCount = argCount
   if argCount == 0 {
-    return CALL_TYPE_EMPTY, argCount
+    route.callType = CALL_TYPE_EMPTY
+    return
   }
 
   firstArg := handlerType.In(0)
   if firstArg.Kind() == reflect.Ptr && firstArg.Elem() == contextType {
     if argCount > 1 {
-      return CALL_TYPE_CTX_AND_PARAMS, argCount
+      route.callType = CALL_TYPE_CTX_AND_PARAMS
     } else {
-      return CALL_TYPE_CTX_ONLY, argCount
+      route.callType = CALL_TYPE_CTX_ONLY
+    }
+    return
+  }
+
+  if argCount == 2 {
+    secondArg := handlerType.In(1)
+    if firstArg.Implements(httpResponseWriterType) && secondArg.Kind() == reflect.Ptr && secondArg.Elem() == requestType {
+      route.callType = CALL_TYPE_HANDLER_FUNC
+      return
     }
   }
 
-  return CALL_TYPE_PARAMS_ONLY, argCount
+  route.callType = CALL_TYPE_PARAMS_ONLY
 }
 
-func DetermineReturnType(handlerType reflect.Type) (int, bool) {
+func (route *Route) CacheReturnType() {
+  handlerType := route.handler.Type()
   outCount := handlerType.NumOut();
   if outCount == 0 {
-    return RETURN_TYPE_EMPTY, false
+    route.returnType = RETURN_TYPE_EMPTY
+    route.returnHasError = false
+    return
   }
 
   hasError := handlerType.Out(outCount - 1) == errorType
+  route.returnHasError = hasError
   if hasError { outCount-- }
   if outCount == 0 {
-    return RETURN_TYPE_EMPTY, hasError
+    route.returnType = RETURN_TYPE_EMPTY
+    return
   }
 
   if outCount > 2 {
     panic("Handler has more return values than expected.")
   } else if outCount == 2 {
-    return RETURN_TYPE_RENDER, hasError
+    route.returnType = RETURN_TYPE_RENDER
+    return
   } else if handlerType.Out(0).Kind() == reflect.String {
-    return RETURN_TYPE_STRING, hasError
+    route.returnType = RETURN_TYPE_STRING
+    return
   }
 
-  return RETURN_TYPE_JSON, hasError
+  route.returnType = RETURN_TYPE_JSON
+  return
 }
 
 func (route *Route) CallHandler(ctx *Context, relativePath string) {
@@ -99,14 +134,16 @@ func (route *Route) CallHandler(ctx *Context, relativePath string) {
   urlParams := route.path.FindStringSubmatch(relativePath)[1:]
   ctx.Req.URLParams = urlParams
 
-  if callType != CALL_TYPE_EMPTY {
-    if callType == CALL_TYPE_CTX_ONLY || callType == CALL_TYPE_CTX_AND_PARAMS {
-      args = append(args, reflect.ValueOf(ctx))
-    }
-    if callType == CALL_TYPE_PARAMS_ONLY || callType == CALL_TYPE_CTX_AND_PARAMS {
-      for _, param := range urlParams {
-        args = append(args, reflect.ValueOf(param))
-      }
+  switch callType {
+  case CALL_TYPE_HANDLER_FUNC:
+    args = []reflect.Value{ reflect.ValueOf(ctx.Res), reflect.ValueOf(ctx.Req.OriginalRequest) }
+  case CALL_TYPE_CTX_ONLY, CALL_TYPE_CTX_AND_PARAMS:
+    args = append(args, reflect.ValueOf(ctx))
+  }
+
+  if callType == CALL_TYPE_PARAMS_ONLY || callType == CALL_TYPE_CTX_AND_PARAMS {
+    for _, param := range urlParams {
+      args = append(args, reflect.ValueOf(param))
     }
   }
 
@@ -170,10 +207,9 @@ func (router *Router) AddRoute(method string, path string, handler interface{}) 
     return
   }
   handlerValue := reflect.ValueOf(handler)
-  handlerType := handlerValue.Type()
   route := &Route{ method: method, path: routeRegex, handler: handlerValue }
-  route.callType, route.argCount = DetermineCallType(handlerType)
-  route.returnType, route.returnHasError = DetermineReturnType(handlerType)
+  route.CacheCallType()
+  route.CacheReturnType()
 
   router.Routes = append(router.Routes, route)
 }
