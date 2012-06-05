@@ -2,6 +2,8 @@ package main
 
 import (
   "github.com/dbrain/soggy"
+  "net/http"
+  "path/filepath"
 )
 
 type APIGetExample struct {
@@ -17,7 +19,16 @@ func WebServer() *soggy.Server {
   server.Get("/about", func () string {
     return "How can you ask questions, when you have no mouth."
   })
-  server.Use(&soggy.RequestLoggerMiddleware{}, server.Router)
+  // The static server middleware will call next if the file is not found (to hit 404 or in this case)
+  server.Get("/static/oldorange.jpg", func (ctx *soggy.Context) error {
+    path, err := filepath.Abs("public/orange.jpg")
+    if err != nil {
+      return err
+    }
+    http.ServeFile(ctx.Res, ctx.Req.OriginalRequest, path)
+    return nil
+  })
+  server.Use(&soggy.RequestLoggerMiddleware{}, soggy.NewStaticServerMiddleware("/static"), server.Router)
   return server
 }
 
@@ -31,7 +42,7 @@ func APIServer() *soggy.Server {
     result[key] = value
     return result
   })
-  server.Use(&soggy.RequestLoggerMiddleware{}, server.Router)
+  server.Use(&soggy.RequestLoggerMiddleware{}, soggy.NewStaticServerMiddleware("/static"), server.Router)
   return server
 }
 
@@ -43,7 +54,7 @@ func AdminServer() *soggy.Server {
   server.Get("/hacks", func () string {
     return "You gosh darn hacked my admin section."
   })
-  server.Use(&soggy.RequestLoggerMiddleware{}, server.Router)
+  server.Use(&soggy.RequestLoggerMiddleware{}, soggy.NewStaticServerMiddleware("/static"), server.Router)
   return server
 }
 

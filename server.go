@@ -10,7 +10,9 @@ import (
 
 const (
   CONFIG_VIEW_PATH = "viewPath"
+  CONFIG_STATIC_PATH = "staticPath"
   DEFAULT_VIEW_PATH = "views"
+  DEFAULT_STATIC_PATH = "public"
 )
 
 type Servers []*Server
@@ -31,12 +33,21 @@ func (servers Servers) Swap(i, j int) {
 
 type ServerConfig map[string]interface{}
 
-func (config ServerConfig) ViewPath(viewPath string) error {
+func (config ServerConfig) SetViewPath(viewPath string) error {
   viewPath, err := filepath.Abs(viewPath)
   if err != nil {
     return err
   }
   config[CONFIG_VIEW_PATH] = viewPath
+  return nil
+}
+
+func (config ServerConfig) SetStaticPath(staticPath string) error {
+  staticPath, err := filepath.Abs(staticPath)
+  if err != nil {
+    return err
+  }
+  config[CONFIG_STATIC_PATH] = staticPath
   return nil
 }
 
@@ -148,6 +159,7 @@ func NewServer(mountpoint string) *Server {
 
 func NewServerConfig() ServerConfig {
   config := make(ServerConfig)
-  config.ViewPath(DEFAULT_VIEW_PATH)
+  config.SetViewPath(DEFAULT_VIEW_PATH)
+  config.SetStaticPath(DEFAULT_STATIC_PATH)
   return config
 }
