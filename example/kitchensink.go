@@ -1,13 +1,19 @@
 package main
 
 import (
-  "github.com/dbrain/soggy"
+  //"github.com/dbrain/soggy"
+  ".."
   "log"
   "errors"
   "fmt"
   "net/http"
   "io"
 )
+
+type HandlerExample struct {}
+func (handlerEx *HandlerExample) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+  res.Write([]byte("Oh what a lovely handler"))
+}
 
 type MiddlewareExample struct {}
 func (middleware *MiddlewareExample) Execute(ctx *soggy.Context) {
@@ -23,6 +29,14 @@ type TemplateExample struct {
 
 func main() {
   app, server := soggy.NewDefaultApp()
+
+  // You can use normal handlers as routes
+  server.Get("/handler", &HandlerExample{})
+
+  // Or handler funcs
+  server.Get("/handlerFunc", func(res http.ResponseWriter, req *http.Request) {
+    res.Write([]byte("Oh what a lovely handler func"))
+  })
 
   // URLParams can be read from the Req
   server.Get("/reqParams/(.*)/(.*)", func (ctx *soggy.Context) string {
