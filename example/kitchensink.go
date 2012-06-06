@@ -26,8 +26,22 @@ type TemplateExample struct {
   Age int
 }
 
+func adminOnly(ctx *soggy.Context, name string) map[string]string {
+  if name == "admin" {
+    ctx.Next(nil)
+    return nil
+  }
+  return map[string]string{ "error": "Not admin" }
+}
+
 func main() {
   app, server := soggy.NewDefaultApp()
+
+  // You can have multiple handlers assigned to a route
+  // This allows for reusable validation steps before continuing
+  server.Get("/adminOnly/(.*)", adminOnly, func () map[string]string {
+    return map[string]string{ "ok": "Hey admin!" }
+  })
 
   // You can use normal handlers that arent pointers
   server.Get("/handlerValue", HandlerExample{})

@@ -1,7 +1,8 @@
 package main
 
 import (
-  "github.com/dbrain/soggy"
+  //"github.com/dbrain/soggy"
+  ".."
   "net/http"
   "path/filepath"
 )
@@ -25,7 +26,7 @@ func WebServer() *soggy.Server {
     if err != nil {
       return err
     }
-    http.ServeFile(ctx.Res, ctx.Req.OriginalRequest, path)
+    http.ServeFile(ctx.Res, ctx.Req.Request, path)
     return nil
   })
   server.Use(&soggy.RequestLoggerMiddleware{}, soggy.NewStaticServerMiddleware("/static"), server.Router)

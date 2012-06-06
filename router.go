@@ -35,13 +35,22 @@ const (
   ANY_PATH = "(.*)"
 )
 
+type SoggyRouter interface {
+  Middleware
+  AddRoute(method string, path string, handler ...interface{})
+}
+
 type Router struct {
+  RouteBundles []*RouteBundle
+}
+
+type RouteBundle struct {
+  method string
+  path *regexp.Regexp
   Routes []*Route
 }
 
 type Route struct {
-  method string
-  path *regexp.Regexp
   handler reflect.Value
   argCount int
   callType int
@@ -55,7 +64,7 @@ var errorType = reflect.TypeOf((*error)(nil)).Elem()
 var httpHandlerType = reflect.TypeOf((*http.Handler)(nil)).Elem()
 var httpResponseWriterType = reflect.TypeOf((*http.ResponseWriter)(nil)).Elem()
 
-func (route *Route) CacheCallType() {
+func (route *Route) CacheCallType(routePath *regexp.Regexp) {
   handlerType := route.handler.Type()
 
   if (handlerType.Kind() == reflect.Ptr && handlerType.Elem().Implements(httpHandlerType)) || handlerType.Implements(httpHandlerType) {
@@ -69,7 +78,7 @@ func (route *Route) CacheCallType() {
   }
 
   if handlerType.Kind() != reflect.Func {
-    panic("Route handlers must a http.Handler or a func. Broken for " + route.path.String())
+    panic("Route handlers must be a http.Handler or a func. Broken for " + routePath.String())
   }
 
   argCount := handlerType.NumIn()
@@ -128,19 +137,40 @@ func (route *Route) CacheReturnType() {
   }
 
   route.returnType = RETURN_TYPE_JSON
-  return
 }
 
-func (route *Route) CallHandler(ctx *Context, relativePath string) {
+func (routeBundle *RouteBundle) CallBundle(ctx *Context, relativePath string) {
+  routes := routeBundle.Routes
+  if len(routes) == 1 {
+    routes[0].CallHandler(ctx, routeBundle.path, relativePath)
+  } else {
+    var next func(interface{})
+    var routeCtx *Context
+    nextIndex := 0
+    next = func (err interface{}) {
+      if err != nil {
+        ctx.Next(err)
+      } else if nextIndex < len(routes) {
+        currentIndex := nextIndex
+        nextIndex++
+        routes[currentIndex].CallHandler(routeCtx, routeBundle.path, relativePath)
+      }
+    }
+    routeCtx = &Context{ ctx.Req, ctx.Res, ctx.Server, ctx.Env, next }
+    next(nil)
+  }
+}
+
+func (route *Route) CallHandler(ctx *Context, routePath *regexp.Regexp, relativePath string) {
   var args []reflect.Value
   callType := route.callType
 
-  urlParams := route.path.FindStringSubmatch(relativePath)[1:]
+  urlParams := routePath.FindStringSubmatch(relativePath)[1:]
   ctx.Req.URLParams = urlParams
 
   switch callType {
   case CALL_TYPE_HANDLER_FUNC:
-    args = []reflect.Value{ reflect.ValueOf(ctx.Res), reflect.ValueOf(ctx.Req.OriginalRequest) }
+    args = []reflect.Value{ reflect.ValueOf(ctx.Res), reflect.ValueOf(ctx.Req.Request) }
   case CALL_TYPE_CTX_ONLY, CALL_TYPE_CTX_AND_PARAMS:
     args = append(args, reflect.ValueOf(ctx))
   }
@@ -152,16 +182,16 @@ func (route *Route) CallHandler(ctx *Context, relativePath string) {
   }
 
   if len(args) < route.argCount {
-    log.Println("Route", route.path.String(), "expects", route.argCount, "arguments but only got", len(args), ". Padding.")
+    log.Println("Route", routePath.String(), "expects", route.argCount, "arguments but only got", len(args), ". Padding.")
     for len(args) < route.argCount {
       args = append(args, reflect.ValueOf(""))
     }
   } else if len(args) > route.argCount {
-    log.Println("Route", route.path.String(), "expects", route.argCount, "arguments but got", len(args), ". Trimming.")
+    log.Println("Route", routePath.String(), "expects", route.argCount, "arguments but got", len(args), ". Trimming.")
     args = args[:route.argCount]
   }
 
-  result, err := route.safelyCall(args)
+  result, err := route.safelyCall(args, routePath)
   if err != nil {
     ctx.Next(err)
     return
@@ -181,47 +211,60 @@ func (route *Route) renderResult(ctx *Context, result []reflect.Value) interface
     }
   }
 
+  // If the return is the zero value for the type its not rendered
+  // This is to allow routes to pass control on without rendering when control comes back.
+  // This may come back to bite me or cause weird issues for users. Document well.
   switch route.returnType {
     case RETURN_TYPE_EMPTY:
       return nil
     case RETURN_TYPE_RENDER:
-      return ctx.Res.Render(http.StatusOK, result[0].String(), result[1].Interface())
+      if template := result[0].String(); template != "" {
+        return ctx.Res.Render(http.StatusOK, template, result[1].Interface())
+      }
     case RETURN_TYPE_STRING:
-      return ctx.Res.Html(http.StatusOK, result[0].String())
+      if html := result[0].String(); html != "" {
+        return ctx.Res.Html(http.StatusOK, html)
+      }
     case RETURN_TYPE_JSON:
-      return ctx.Res.Json(http.StatusOK, result[0].Interface())
+      if !result[0].IsNil() {
+        return ctx.Res.Json(http.StatusOK, result[0].Interface())
+      }
   }
   return nil
 }
 
-func (route *Route) safelyCall(args []reflect.Value) (result []reflect.Value, err interface{}) {
+func (route *Route) safelyCall(args []reflect.Value, routePath *regexp.Regexp) (result []reflect.Value, err interface{}) {
   defer func() {
     if err = recover(); err != nil {
-      log.Println("Handler for route", route.path.String(), "paniced with", err)
+      log.Println("Handler for route", routePath.String(), "paniced with", err)
     }
   }()
   return route.handler.Call(args), err
 }
 
-func (router *Router) AddRoute(method string, path string, handler interface{}) {
+func (router *Router) AddRoute(method string, path string, handlers ...interface{}) {
   rawRegex := "^" + SaneURLPath(path) + "$"
   routeRegex, err := regexp.Compile(rawRegex)
   if err != nil {
     log.Println("Could not compile route regex", rawRegex, ":", err)
     return
   }
-  handlerValue := reflect.ValueOf(handler)
-  route := &Route{ method: method, path: routeRegex, handler: handlerValue }
-  route.CacheCallType()
-  route.CacheReturnType()
+  routeBundle := &RouteBundle{ method, routeRegex, make([]*Route, 0, 1) }
+  for _, handler := range handlers {
+    handlerValue := reflect.ValueOf(handler)
+    route := &Route{ handler: handlerValue }
+    route.CacheCallType(routeRegex)
+    route.CacheReturnType()
+    routeBundle.Routes = append(routeBundle.Routes, route)
+  }
 
-  router.Routes = append(router.Routes, route)
+  router.RouteBundles = append(router.RouteBundles, routeBundle)
 }
 
-func (router *Router) findRoute(method, relativePath string, start int) (*Route, int) {
-  routes := router.Routes
-  for i := start; i < len(routes); i++ {
-    route := routes[i];
+func (router *Router) findRoute(method, relativePath string, start int) (*RouteBundle, int) {
+  routeBundles := router.RouteBundles
+  for i := start; i < len(routeBundles); i++ {
+    route := routeBundles[i];
     if route.method == method || route.method == ALL_METHODS {
       if route.path.MatchString(relativePath) {
         return route, i + 1
@@ -245,10 +288,10 @@ func (router *Router) Execute(middlewareCtx *Context) {
       return
     }
 
-    var route *Route
-    route, routeIndex = router.findRoute(method, relativePath, routeIndex)
-    if route != nil {
-      route.CallHandler(context, relativePath)
+    var routeBundle *RouteBundle
+    routeBundle, routeIndex = router.findRoute(method, relativePath, routeIndex)
+    if routeBundle != nil {
+      routeBundle.CallBundle(context, relativePath)
     } else {
       middlewareCtx.Next(nil)
     }
@@ -259,5 +302,5 @@ func (router *Router) Execute(middlewareCtx *Context) {
 }
 
 func NewRouter() *Router {
-  return &Router{ Routes: make([]*Route, 0, 5) }
+  return &Router{ RouteBundles: make([]*RouteBundle, 0, 5) }
 }

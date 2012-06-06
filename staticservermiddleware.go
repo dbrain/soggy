@@ -28,7 +28,7 @@ func (staticServer *StaticServerMiddleware) Execute(ctx *Context) {
     staticPath := ctx.Server.Config[CONFIG_STATIC_PATH].(string)
     staticFile := filepath.Join(staticPath, staticServer.GetRelativeFilePath(req.RelativePath))
     if stat, err := os.Stat(staticFile); err == nil && !stat.IsDir() {
-      http.ServeFile(ctx.Res, req.OriginalRequest, staticFile)
+      http.ServeFile(ctx.Res, req.Request, staticFile)
     } else {
       ctx.Next(nil)
     }

@@ -11,10 +11,10 @@ func myHandler(ctx *Context) {
 func TestAddRouteAppendsSlashToPath(t *testing.T) {
   router := NewRouter()
   router.AddRoute("GET", "/foo", myHandler)
-  if len(router.Routes) == 0 {
+  if len(router.RouteBundles) == 0 {
     t.Error("where's my route?")
   }
-  if router.Routes[0].path.String() != "^/foo/$" {
+  if router.RouteBundles[0].path.String() != "^/foo/$" {
     t.Error("route does not match expected pattern")
   }
 }

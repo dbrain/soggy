@@ -54,7 +54,7 @@ func (config ServerConfig) SetStaticPath(staticPath string) error {
 type Server struct {
   Mountpoint string
   middleware []Middleware
-  Router *Router
+  Router SoggyRouter
   Config ServerConfig
   ErrorHandler ErrorHandler
   TemplateEngines map[string]TemplateEngineFunc
@@ -112,24 +112,24 @@ func (server *Server) Use(middleware ...Middleware) {
   server.middleware = append(server.middleware, middleware...)
 }
 
-func (server *Server) Get(path string, routeHandler interface{}) {
-  server.Router.AddRoute(GET_METHOD, path, routeHandler);
+func (server *Server) Get(path string, routeHandlers ...interface{}) {
+  server.Router.AddRoute(GET_METHOD, path, routeHandlers...);
 }
 
-func (server *Server) Post(path string, routeHandler interface{}) {
-  server.Router.AddRoute(POST_METHOD, path, routeHandler);
+func (server *Server) Post(path string, routeHandlers ...interface{}) {
+  server.Router.AddRoute(POST_METHOD, path, routeHandlers...);
 }
 
-func (server *Server) Put(path string, routeHandler interface{}) {
-  server.Router.AddRoute(PUT_METHOD, path, routeHandler);
+func (server *Server) Put(path string, routeHandlers ...interface{}) {
+  server.Router.AddRoute(PUT_METHOD, path, routeHandlers...);
 }
 
-func (server *Server) Delete(path string, routeHandler interface{}) {
-  server.Router.AddRoute(DELETE_METHOD, path, routeHandler);
+func (server *Server) Delete(path string, routeHandlers ...interface{}) {
+  server.Router.AddRoute(DELETE_METHOD, path, routeHandlers...);
 }
 
-func (server *Server) All(path string, routeHandler interface{}) {
-  server.Router.AddRoute(ALL_METHODS, path, routeHandler);
+func (server *Server) All(path string, routeHandlers ...interface{}) {
+  server.Router.AddRoute(ALL_METHODS, path, routeHandlers...);
 }
 
 func DefaultErrorHandler(ctx *Context, err interface{}) {
