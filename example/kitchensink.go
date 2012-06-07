@@ -37,6 +37,12 @@ func adminOnly(ctx *soggy.Context, name string) map[string]string {
 func main() {
   app, server := soggy.NewDefaultApp()
 
+  // Every request has a unique.. enough.. ID using a rough UUIDv4 impl.
+  // You can use this for logging
+  server.Get("/uid", func (ctx *soggy.Context) map[string]string {
+    return map[string]string{ "uuid": ctx.Req.ID }
+  })
+
   // You can have multiple handlers assigned to a route
   // This allows for reusable validation steps before continuing
   server.Get("/adminOnly/(.*)", adminOnly, func () map[string]string {

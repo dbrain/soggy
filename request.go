@@ -9,6 +9,7 @@ type URLParams []string
 
 type Request struct {
   *http.Request
+  ID string
   RelativePath string
   URLParams URLParams
 }
@@ -23,7 +24,7 @@ func (req *Request) SetRelativePath(mountpoint string, path string) {
 }
 
 func NewRequest(req *http.Request) *Request {
-  return &Request{ Request: req, URLParams: make(URLParams, 2) }
+  return &Request{ ID: UIDString(), Request: req, URLParams: make(URLParams, 2) }
 }
 
 func newStubRequest(method, path string) *Request {
@@ -32,6 +33,6 @@ func newStubRequest(method, path string) *Request {
     panic("invalid path")
   }
   req := &http.Request{ URL: url, Method: method }
-  return &Request{ Request: req, RelativePath: path }
+  return &Request{ ID: UIDString(), Request: req, RelativePath: path }
 }
 
