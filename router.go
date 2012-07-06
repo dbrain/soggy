@@ -56,6 +56,7 @@ type Route struct {
   callType int
   returnType int
   returnHasError bool
+  returnHasStatusCode bool
 }
 
 var contextType = reflect.TypeOf(Context{})
@@ -112,6 +113,7 @@ func (route *Route) CacheCallType(routePath *regexp.Regexp) {
 func (route *Route) CacheReturnType() {
   handlerType := route.handler.Type()
   outCount := handlerType.NumOut();
+  outSkip := 0
   if outCount == 0 {
     route.returnType = RETURN_TYPE_EMPTY
     route.returnHasError = false
@@ -126,12 +128,23 @@ func (route *Route) CacheReturnType() {
     return
   }
 
+  hasStatusCode := handlerType.Out(0).Kind() == reflect.Int
+  route.returnHasStatusCode = hasStatusCode
+  if hasStatusCode {
+    outCount--
+    outSkip++
+  }
+  if (outCount == 0) {
+    route.returnType = RETURN_TYPE_EMPTY
+    return
+  }
+
   if outCount > 2 {
     panic("Handler has more return values than expected.")
   } else if outCount == 2 {
     route.returnType = RETURN_TYPE_RENDER
     return
-  } else if handlerType.Out(0).Kind() == reflect.String {
+  } else if handlerType.Out(outSkip).Kind() == reflect.String {
     route.returnType = RETURN_TYPE_STRING
     return
   }
@@ -211,6 +224,12 @@ func (route *Route) renderResult(ctx *Context, result []reflect.Value) interface
     }
   }
 
+  statusCode := http.StatusOK
+  if route.returnHasStatusCode {
+    statusCode = result[0].Interface().(int)
+    result = result[1:len(result)]
+  }
+
   // If the return is the zero value for the type its not rendered
   // This is to allow routes to pass control on without rendering when control comes back.
   // This may come back to bite me or cause weird issues for users. Document well.
@@ -219,15 +238,15 @@ func (route *Route) renderResult(ctx *Context, result []reflect.Value) interface
       return nil
     case RETURN_TYPE_RENDER:
       if template := result[0].String(); template != "" {
-        return ctx.Res.Render(http.StatusOK, template, result[1].Interface())
+        return ctx.Res.Render(statusCode, template, result[1].Interface())
       }
     case RETURN_TYPE_STRING:
       if html := result[0].String(); html != "" {
-        return ctx.Res.Html(http.StatusOK, html)
+        return ctx.Res.Html(statusCode, html)
       }
     case RETURN_TYPE_JSON:
       if !result[0].IsNil() {
-        return ctx.Res.Json(http.StatusOK, result[0].Interface())
+        return ctx.Res.Json(statusCode, result[0].Interface())
       }
   }
   return nil

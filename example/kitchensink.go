@@ -123,6 +123,22 @@ func main() {
     panic("This panic was supposed to hit an error handler")
   })
 
+  // You can return an int as the first parameter to signify the status code
+  // Note this will not work if it is the only parameter returned (instead use ctx yourself)
+  server.Get("/403", func () (int, string) {
+    return 403, "This is broken";
+  });
+
+  // The status code works for JSON
+  server.Get("/403json", func () (int, interface{}) {
+    return 403, map[string]string{ "error": "This is still broken with a JSON return" };
+  });
+
+  // And rendering ..
+  server.Get("/403render", func () (int, string, interface{}) {
+    return 403, "kitchensink.html", &TemplateExample{"Broken", 403}
+  })
+
   // Override the default error handler
   server.ErrorHandler = func(ctx *soggy.Context, err interface{}) {
     res := ctx.Res

@@ -2,7 +2,6 @@ package soggy
 
 import (
   "net/http"
-  "mime"
   "encoding/json"
   "bytes"
   "os"
@@ -14,14 +13,17 @@ const (
   POWERED_BY = "sogginess"
 )
 
+const (
+  HTML_CONTENT_TYPE = "text/html; charset=utf-8"
+  JSON_CONTENT_TYPE = "application/json; charset=utf-8"
+)
+
 type Response struct {
   http.ResponseWriter
   server *Server
 }
 
 func (res *Response) Render(status int, file string, params interface{}) (err interface{}) {
-  res.WriteHeader(status)
-  res.Set("Content-Type", mime.TypeByExtension(".html"))
   buf := new(bytes.Buffer)
 
   ext, template := res.server.TemplatePath(file)
@@ -38,21 +40,23 @@ func (res *Response) Render(status int, file string, params interface{}) (err in
   if err != nil {
     return err
   }
+  res.Set("Content-Type", HTML_CONTENT_TYPE)
   res.Set("Content-Length", string(buf.Len()))
+  res.WriteHeader(status)
   _, err = io.Copy(res, buf)
   return err
 }
 
 func (res *Response) Html(status int, html string) (err interface{}) {
+  res.Set("Content-Type", HTML_CONTENT_TYPE)
   res.WriteHeader(status)
-  res.Set("Content-Type", mime.TypeByExtension(".html"))
   _, err = res.WriteString(html)
   return err
 }
 
 func (res *Response) Json(status int, jsonIn interface{}) (err interface{}) {
+  res.Set("Content-Type", JSON_CONTENT_TYPE)
   res.WriteHeader(status)
-  res.Set("Content-Type", mime.TypeByExtension(".json"))
   jsonOut, err := json.Marshal(jsonIn)
   if err == nil {
     _, err = res.Write(jsonOut)
