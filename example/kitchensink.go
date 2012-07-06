@@ -98,8 +98,8 @@ func main() {
   // No return expects you to write to ctx.Res yourself
   server.Get("/writeYourself", func (ctx *soggy.Context) {
     res := ctx.Res
-    res.WriteHeader(http.StatusOK)
     res.Set("Content-Type", "text/plain")
+    res.WriteHeader(http.StatusOK)
     res.WriteString("Cannn dooo.")
   })
 
@@ -126,13 +126,13 @@ func main() {
   // You can return an int as the first parameter to signify the status code
   // Note this will not work if it is the only parameter returned (instead use ctx yourself)
   server.Get("/403", func () (int, string) {
-    return 403, "This is broken";
-  });
+    return 403, "This is broken"
+  })
 
   // The status code works for JSON
   server.Get("/403json", func () (int, interface{}) {
-    return 403, map[string]string{ "error": "This is still broken with a JSON return" };
-  });
+    return 403, map[string]string{ "error": "This is still broken with a JSON return" }
+  })
 
   // And rendering ..
   server.Get("/403render", func () (int, string, interface{}) {
@@ -157,6 +157,7 @@ func main() {
   server.All(soggy.ANY_PATH, func (context *soggy.Context) {
     res := context.Res
     res.Header().Set("Content-Type", "text/plain")
+    res.WriteHeader(404)
     res.WriteString("404 Page for " + context.Req.RelativePath)
   })
 
