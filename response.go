@@ -6,6 +6,7 @@ import (
   "bytes"
   "os"
   "io"
+  "strconv"
 )
 
 const (
@@ -41,7 +42,7 @@ func (res *Response) Render(status int, file string, params interface{}) (err in
     return err
   }
   res.Set("Content-Type", HTML_CONTENT_TYPE)
-  res.Set("Content-Length", string(buf.Len()))
+  res.Set("Content-Length", strconv.Itoa(buf.Len()))
   res.WriteHeader(status)
   _, err = io.Copy(res, buf)
   return err
@@ -49,6 +50,7 @@ func (res *Response) Render(status int, file string, params interface{}) (err in
 
 func (res *Response) Html(status int, html string) (err interface{}) {
   res.Set("Content-Type", HTML_CONTENT_TYPE)
+  res.Set("Content-Length", strconv.Itoa(len(html)))
   res.WriteHeader(status)
   _, err = res.WriteString(html)
   return err
@@ -56,15 +58,17 @@ func (res *Response) Html(status int, html string) (err interface{}) {
 
 func (res *Response) Json(status int, jsonIn interface{}) (err interface{}) {
   res.Set("Content-Type", JSON_CONTENT_TYPE)
-  res.WriteHeader(status)
   jsonOut, err := json.Marshal(jsonIn)
   if err == nil {
+    res.Set("Content-Length", strconv.Itoa(len(jsonOut)))
+    res.WriteHeader(status)
     _, err = res.Write(jsonOut)
   }
   return err
 }
 
 func (res *Response) WriteString(s string) (int, error) {
+  res.Set("Content-Length", strconv.Itoa(len(s)))
     return res.Write([]byte(s))
 }
 

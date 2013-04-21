@@ -30,7 +30,7 @@ func NewRequest(req *http.Request) *Request {
 func newStubRequest(method, path string) *Request {
   url, err := url.ParseRequestURI(path)
   if err != nil {
-    panic("invalid path")
+    panic("Invalid path")
   }
   req := &http.Request{ URL: url, Method: method }
   return &Request{ ID: UIDString(), Request: req, RelativePath: path }
