@@ -38,11 +38,9 @@ func (app *App) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 }
 
 func (app *App) BindHandlers() {
-  for _, server := range app.servers {
-    http.HandleFunc(server.Mountpoint, func (res http.ResponseWriter, req *http.Request) {
-      server.ServeHTTP(res, req)
-    })
-  }
+  http.HandleFunc("/", func (res http.ResponseWriter, req *http.Request) {
+    app.ServeHTTP(res, req)
+  })
 }
 
 func (app *App) Listen(address string) {
