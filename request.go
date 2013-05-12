@@ -39,7 +39,7 @@ func (req *Request) GetBody() (string, interface{}, error) {
     return req.bodyType, req.parsedBody, req.bodyParseError
   }
 
-  req.bodyParsed = true
+  defer func () { req.bodyParsed = true }()
   contentType := req.Header.Get("Content-Type")
   if contentType == "" {
     req.bodyParseError = errors.New("No content type specified")
