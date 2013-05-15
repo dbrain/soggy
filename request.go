@@ -34,7 +34,7 @@ func (req *Request) SetRelativePath(mountpoint string, path string) {
   }
 }
 
-func (req *Request) GetBody() (string, interface{}, error) {
+func (req *Request) GetBody(jsonStruct interface{}) (string, interface{}, error) {
   if req.bodyParsed {
     return req.bodyType, req.parsedBody, req.bodyParseError
   }
@@ -51,24 +51,26 @@ func (req *Request) GetBody() (string, interface{}, error) {
   switch {
   case strings.HasPrefix(mimeType, "application/") && strings.HasSuffix(mimeType, "json"):
     req.bodyType = BodyTypeJson
-    return req.parseJSON()
+    return req.parseJSON(jsonStruct)
   }
 
   return "", nil, errors.New("Unsupported content type " + contentType)
 }
 
-func (req *Request) parseJSON() (string, interface{}, error) {
-  var parsedBody map[string]interface{}
+func (req *Request) parseJSON(jsonStruct interface{}) (string, interface{}, error) {
+  if jsonStruct == nil {
+    jsonStruct = map[string]interface{}{}
+  }
   body, err := ioutil.ReadAll(req.Body);
   if err != nil {
     req.bodyParseError = err
     return req.bodyType, nil, req.bodyParseError
   }
-  if err := json.Unmarshal(body, &parsedBody); err != nil {
+  if err := json.Unmarshal(body, &jsonStruct); err != nil {
     req.bodyParseError = err
     return req.bodyType, nil, req.bodyParseError
   }
-  req.parsedBody = parsedBody
+  req.parsedBody = jsonStruct
   return BodyTypeJson, req.parsedBody, nil
 }
 
