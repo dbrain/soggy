@@ -133,6 +133,7 @@ func (server *Server) All(path string, routeHandlers ...interface{}) {
 }
 
 func DefaultErrorHandler(ctx *Context, err interface{}) {
+  log.Println("An error occured for", ctx.Req.RelativePath, err)
   res := ctx.Res
   res.WriteHeader(http.StatusInternalServerError)
   switch err.(type) {
@@ -143,8 +144,6 @@ func DefaultErrorHandler(ctx *Context, err interface{}) {
     default:
       res.Write([]byte("An error occured processing your request"))
   }
-
-  log.Println("An error occured for", ctx.Req.RelativePath, err)
 }
 
 func NewServer(mountpoint string) *Server {
